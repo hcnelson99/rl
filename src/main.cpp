@@ -45,7 +45,5 @@ int main() {
 		map.print();
 	}
 
-	endwin();
-
 	return 0;
 }
