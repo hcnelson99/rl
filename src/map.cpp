@@ -8,25 +8,33 @@
 #include "log.h"
 #include "pcg_variants.h"
 
+Vector2 index_to_pos(int i) {
+	return {i % MAP_SIZE.x, i / MAP_SIZE.x};
+}
+
+int pos_to_index(const Vector2 &pos) {
+	return pos.y * MAP_SIZE.x + pos.x;
+}
+
 bool pos_in_range(const Vector2 &pos) {
-	return pos.y >= 0 && pos.y < HEIGHT && pos.x >= 0 && pos.x < WIDTH;
+	return pos.y >= 0 && pos.y < MAP_SIZE.y && pos.x >= 0 && pos.x < MAP_SIZE.x;
 }
 
 bool index_in_range(int i) {
-	return i >= 0 && i < WIDTH * HEIGHT;
+	return i >= 0 && i < MAP_TILE_COUNT;
 }
 
 Tile *Map::at(const Vector2 &pos) {
 	if (!pos_in_range(pos)) {
 		CRITICAL("Map index out of range!: %d %d", pos.x, pos.y);
 	}
-	return &map[pos.y * WIDTH + pos.x];
+	return &map[pos_to_index(pos)];
 }
 const Tile *Map::at(const Vector2 &pos) const {
 	if (!pos_in_range(pos)) {
 		CRITICAL("Map index out of range!: %d %d", pos.x, pos.y);
 	}
-	return &map[pos.y * WIDTH + pos.x];
+	return &map[pos_to_index(pos)];
 }
 Tile *Map::at(int i) {
 	if (!index_in_range(i)) {
@@ -80,22 +88,13 @@ int Map::count_neighbors(const Vector2 &pos) const {
 void Map::cellular_automata_iteration() {
 	Map old_map;
 	memcpy(&old_map, &map, sizeof(Map));
-	for (int x = 0; x < WIDTH; x++) {
-		for (int y = 0; y < HEIGHT; y++) {
+	for (int x = 0; x < MAP_SIZE.x; x++) {
+		for (int y = 0; y < MAP_SIZE.y; y++) {
 			Vector2 pos = {x, y};
 			int threshold = old_map.occupied(pos) ? 3 : 5;
 			*at(pos) = old_map.count_neighbors(pos) >= threshold
 				? Tile::Wall
 				: Tile::Floor;
-		}
-	}
-}
-
-void Map::print() {
-	for (int i = 0; i < MAP_SIZE; i++) {
-		printw("%s", *at(i) == Tile::Wall ? "#" : ".");
-		if ((i + 1) % WIDTH == 0) {
-			printw("\n");
 		}
 	}
 }
@@ -113,7 +112,7 @@ void random_map(Map *map) {
 
 	seed_pcg32(&gen, 0);
 
-	for (int i = 0; i < MAP_SIZE; i++) {
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
 		if (pcg32_boundedrand_r(&gen, 100) < 40) {
 			map->map[i] = Tile::Wall;
 		} else {
@@ -126,15 +125,15 @@ void random_map(Map *map) {
 	}
 
 	// Fill edges
-	for (int x = 0; x < WIDTH; x++) {
+	for (int x = 0; x < MAP_SIZE.x; x++) {
 		Vector2 pos1 = {x, 0};
-		Vector2 pos2 = {x, HEIGHT-1};
+		Vector2 pos2 = {x, MAP_SIZE.y - 1};
 		*map->at(pos1) = Tile::Wall;
 		*map->at(pos2) = Tile::Wall;
 	}
-	for (int y = 0; y < HEIGHT; y++) {
+	for (int y = 0; y < MAP_SIZE.y; y++) {
 		Vector2 pos1 = {0, y};
-		Vector2 pos2 = {WIDTH-1, y};
+		Vector2 pos2 = {MAP_SIZE.x - 1, y};
 		*map->at(pos1) = Tile::Wall;
 		*map->at(pos2) = Tile::Wall;
 	}
@@ -142,8 +141,8 @@ void random_map(Map *map) {
 }
 
 void filled_map(Map *map) {
-	for (int x = 0; x < WIDTH; x++) {
-		for (int y = 0; y < HEIGHT; y++) {
+	for (int x = 0; x < MAP_SIZE.x; x++) {
+		for (int y = 0; y < MAP_SIZE.y; y++) {
 			*map->at({x, y}) = Tile::Wall;
 		}
 	}
@@ -205,4 +204,68 @@ void bezier(Map *map) {
 	for (int i = 0; i < 5; i++) {
 		map->cellular_automata_iteration();
 	}
+}
+
+
+void Map::visibility(const Vector2 &p0) {
+	for (int t = 0; t < MAP_TILE_COUNT; t++) {
+		Vector2 p1 = index_to_pos(t);
+
+		int dx = p1.x - p0.x;
+		int dy = p1.y - p0.y;
+
+		int steps = max(abs(dx), abs(dy));
+
+		double xi = dx / (double) steps;
+		double yi = dy / (double) steps;
+
+		double x = p0.x;
+		double y = p0.y;
+		for (int i = 0; i < steps; i++) {
+			if (*at({x, y}) == Tile::Wall) {
+				// visible[t] = false;
+				goto next_iteration;
+			}
+			x += xi;
+			y += yi;
+		}
+		visible[t] = true;
+next_iteration: ;
+	}
+}
+
+void Map::print_visible(const Vector2 &camera_pos, const Vector2 &player_pos) {
+	// @Speed: Recalculate visibility every frame??
+	visibility(player_pos);
+
+	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
+		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
+				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
+	}
+
+	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
+		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
+			if (visible[pos_to_index({x, y})]) {
+				printw("%s", *at({x, y}) == Tile::Wall ? "#" : ".");
+			} else {
+				printw(" ");
+			}
+		}
+		printw("\n");
+	}
+}
+
+void Map::print(Vector2 pos) const {
+	if (!pos_in_range(pos + VIEW_SIZE - Vector2{1, 1})) {
+		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
+				pos.x, VIEW_SIZE.x, pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
+	}
+
+	for (int y = pos.y; y < pos.y + VIEW_SIZE.y; y++) {
+		for (int x = pos.x; x < pos.x + VIEW_SIZE.x; x++) {
+			printw("%s", *at({x, y}) == Tile::Wall ? "#" : " ");
+		}
+		printw("\n");
+	}
+
 }
