@@ -3,6 +3,7 @@
 #include <syscall.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <stdlib.h>
 
 #include "map.h"
 #include "log.h"
@@ -107,22 +108,23 @@ void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	pcg32_srandom_r(rng, seed, initseq);
 }
 
-void random_map(Map *map) {
+void random_map(Map *map, int percent) {
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
 
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
-		if (pcg32_boundedrand_r(&gen, 100) < 40) {
+		if (pcg32_boundedrand_r(&gen, 100) < percent) {
 			map->map[i] = Tile::Wall;
 		} else {
 			map->map[i] = Tile::Floor;
 		}
 	}
 
-	for (int i = 0; i < 5; i++) {
-		map->cellular_automata_iteration();
-	}
+	// Go to stability
+	// for (int i = 0; i < 5; i++) {
+	// 	map->cellular_automata_iteration();
+	// }
 
 	// Fill edges
 	for (int x = 0; x < MAP_SIZE.x; x++) {
@@ -207,20 +209,21 @@ void bezier(Map *map) {
 }
 
 
-void Map::visibility(const Vector2 &p0) {
+void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) const {
 	for (int t = 0; t < MAP_TILE_COUNT; t++) {
 		Vector2 p1 = index_to_pos(t);
+		LOG("%d %d", p1.x, p1.y);
 
-		int dx = p1.x - p0.x;
-		int dy = p1.y - p0.y;
+		int dx = p1.x - player_pos.x;
+		int dy = p1.y - player_pos.y;
 
 		int steps = max(abs(dx), abs(dy));
 
 		double xi = dx / (double) steps;
 		double yi = dy / (double) steps;
 
-		double x = p0.x;
-		double y = p0.y;
+		double x = player_pos.x;
+		double y = player_pos.y;
 		for (int i = 0; i < steps; i++) {
 			if (*at({x, y}) == Tile::Wall) {
 				// visible[t] = false;
@@ -234,10 +237,7 @@ next_iteration: ;
 	}
 }
 
-void Map::print_visible(const Vector2 &camera_pos, const Vector2 &player_pos) {
-	// @Speed: Recalculate visibility every frame??
-	visibility(player_pos);
-
+void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) {
 	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
 		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
 				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
@@ -255,14 +255,27 @@ void Map::print_visible(const Vector2 &camera_pos, const Vector2 &player_pos) {
 	}
 }
 
-void Map::print(Vector2 pos) const {
-	if (!pos_in_range(pos + VIEW_SIZE - Vector2{1, 1})) {
-		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
-				pos.x, VIEW_SIZE.x, pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
+void clear_visibility(bool visible[MAP_TILE_COUNT]) {
+	memset(visible, false, MAP_TILE_COUNT);
+}
+
+void Map::print() const {
+	for (int y = 0; y < MAP_SIZE.y; y++) {
+		for (int x = 0; x < MAP_SIZE.x; x++) {
+			printw("%s", *at({x, y}) == Tile::Wall ? "#" : " ");
+		}
+		printw("\n");
 	}
 
-	for (int y = pos.y; y < pos.y + VIEW_SIZE.y; y++) {
-		for (int x = pos.x; x < pos.x + VIEW_SIZE.x; x++) {
+}
+void Map::print(const Vector2 &camera_pos) const {
+	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
+		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
+				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
+	}
+
+	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
+		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
 			printw("%s", *at({x, y}) == Tile::Wall ? "#" : " ");
 		}
 		printw("\n");

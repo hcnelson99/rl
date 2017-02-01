@@ -9,4 +9,5 @@ struct Vector2 {
 	void operator+=(const Vector2 &v);
 	void operator-=(const Vector2 &v);
 	bool operator==(const Vector2 &v) const;
+	bool operator!=(const Vector2 &v) const;
 };
