@@ -1,7 +1,6 @@
 #include <ncurses.h>
 #include <stdio.h>
 
-
 #include "map.h"
 #include "log.h"
 #include "defer.h"
@@ -10,7 +9,8 @@ WINDOW* init_win() {
 	WINDOW *win = initscr();
 	noecho();
 	curs_set(0);
-	// nodelay(win, true);
+	// halfdelay(1);
+	nodelay(win, true);
 	keypad(win, true);
 	return win;
 }
@@ -19,21 +19,52 @@ bool camera_in_range(const Vector2 &camera_pos) {
 	return pos_in_range(camera_pos) && pos_in_range(camera_pos + VIEW_SIZE);
 }
 
-void move_player(const Map &map, Vector2 *player_pos, Vector2 *camera_pos, const Vector2 &dir) {
+void camera_position(const Vector2 &player_pos, Vector2 *camera_pos) {
+	*camera_pos = player_pos - HALF_SCREEN;
+
+	if (camera_pos->x < 0) { camera_pos->x = 0; }
+	if (camera_pos->y < 0) { camera_pos->y = 0; }
+	if (camera_pos->x > MAP_SIZE.x - VIEW_SIZE.x) { camera_pos->x = MAP_SIZE.x - VIEW_SIZE.x; }
+	if (camera_pos->y > MAP_SIZE.y - VIEW_SIZE.y) { camera_pos->y = MAP_SIZE.y - VIEW_SIZE.y; }
+
+}
+
+void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 	Vector2 new_player_pos = *player_pos + dir;
 
 	if (*map.at(new_player_pos) == Tile::Floor) {
 		*player_pos = new_player_pos;
 	}
 
-	*camera_pos = *player_pos - HALF_SCREEN;
 
-	if (camera_pos->x < 0) { camera_pos->x = 0; }
-	if (camera_pos->y < 0) { camera_pos->y = 0; }
-	if (camera_pos->x > MAP_SIZE.x - VIEW_SIZE.x) { camera_pos->x = MAP_SIZE.x - VIEW_SIZE.x; }
-	if (camera_pos->y > MAP_SIZE.y - VIEW_SIZE.y) { camera_pos->y = MAP_SIZE.y - VIEW_SIZE.y; }
 }
 
+
+void render_entire_map(const Map &map) {
+	erase();
+	map.print();
+	refresh();
+}
+
+void render(const Map &map, bool visible[MAP_TILE_COUNT],
+		const Vector2 &player_pos) {
+	erase();
+
+	Vector2 camera_pos;
+	camera_position(player_pos, &camera_pos);
+
+	if (visible) {
+		map.visibility(player_pos, visible);
+		map.print_visible(camera_pos, visible);
+	} else {
+		map.print(camera_pos);
+	}
+
+	Vector2 player_screen_location = player_pos - camera_pos;
+	mvprintw(player_screen_location.y, player_screen_location.x, "@");
+
+	refresh();
+}
 
 
 int main() {
@@ -44,16 +75,16 @@ int main() {
 
 	Map map;
 
-	random_map(&map, 40);
+	// bool *visible = nullptr;
+	bool visible[MAP_TILE_COUNT];
+	clear_visibility(visible);
+
+	empty_map(&map);
 
 	// Player's center
 	Vector2 player_pos = MAP_SIZE / 2;
 
-	// Upper left corner of screen
-	Vector2 camera_pos = player_pos - HALF_SCREEN;
-
-	bool visible[MAP_TILE_COUNT];
-	clear_visibility(visible);
+	bool redraw = true;
 
 	while (true) {
 		int c = getch();
@@ -64,7 +95,6 @@ int main() {
 
 		int fill_pct = -1;
 		Vector2 move = {0, 0};
-		bool redraw = false;
 
 		switch (c) {
 			case 'c':
@@ -73,9 +103,14 @@ int main() {
 				redraw = true;
 				break;
 			case 'r':
-				fill_pct = 40;
+				clear_visibility(visible);
+				random_map(&map);
+				redraw = true;
+				break;
 			case 'e':
-				fill_pct = 45;
+				clear_visibility(visible);
+				alec_random(&map);
+				redraw = true;
 				break;
 			case 'w':
 				move = Vector2{0, -1};
@@ -91,26 +126,15 @@ int main() {
 				break;
 		}
 
-		if (fill_pct != -1) {
-			clear_visibility(visible);
-			random_map(&map, fill_pct);
-			redraw = true;
-		}
-
 		if (move != Vector2{0, 0}) {
-			move_player(map, &player_pos, &camera_pos, move);
+			move_player(map, &player_pos, move);
 			redraw = true;
 		}
-
-
-
 
 		if (redraw) {
-			erase();
-			map.visibility(player_pos, visible);
-			map.print_visible(camera_pos, visible);
-			Vector2 player_screen_location = player_pos - camera_pos;
-			mvprintw(player_screen_location.y, player_screen_location.x, "@");
+			// render_entire_map(map);
+			render(map, visible, player_pos);
+			redraw = false;
 		}
 	}
 

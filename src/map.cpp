@@ -108,23 +108,105 @@ void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	pcg32_srandom_r(rng, seed, initseq);
 }
 
-void random_map(Map *map, int percent) {
+// p1 is upper left (inclusive), p2 is upper right (exclusive)
+struct Rect {
+	Vector2 p1, p2;
+};
+
+void random_room(Rect *room, pcg32_random_t *gen) {
+	int width = pcg32_boundedrand_r(gen, 10) + 8;
+	int height = pcg32_boundedrand_r(gen, 10) + 8;
+	room->p1.x = pcg32_boundedrand_r(gen, MAP_SIZE.x - width + 1);
+	room->p1.y = pcg32_boundedrand_r(gen, MAP_SIZE.y - height + 1);
+	room->p2.x = room->p1.x + width;
+	room->p2.y = room->p1.y + height;
+}
+
+bool overlaps(const Rect &r1, const Rect &r2) {
+	return !(r1.p2.x < r2.p1.x || r1.p2.y < r2.p1.y ||
+		    r2.p2.x < r1.p1.x || r2.p2.y < r1.p1.y);
+}
+
+void alec_random(Map *map) {
+	int percent = 40;
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
 
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
 		if (pcg32_boundedrand_r(&gen, 100) < percent) {
-			map->map[i] = Tile::Wall;
+			*map->at(i) = Tile::Wall;
 		} else {
-			map->map[i] = Tile::Floor;
+			*map->at(i) = Tile::Floor;
 		}
 	}
 
 	// Go to stability
-	// for (int i = 0; i < 5; i++) {
-	// 	map->cellular_automata_iteration();
-	// }
+	for (int i = 0; i < 100; i++) {
+		map->cellular_automata_iteration();
+	}
+
+	int room_num = 20;
+	Rect rooms[room_num];
+	for (int i = 0; i < room_num; i++) {
+		Rect room;
+		bool overlap;
+		const int iteration_limit = 100;
+		int n = 0;
+		do {
+			overlap = false;
+			random_room(&room, &gen);
+
+			int border = 5;
+
+			Rect larger_room { room.p1 - Vector2 {5, 5}, room.p2 + Vector2 {5, 5}};
+			if (larger_room.p1.x < 0) larger_room.p1.x = 0;
+			if (larger_room.p1.y < 0) larger_room.p1.y = 0;
+			if (larger_room.p2.x > MAP_SIZE.x - 1) larger_room.p2.x = MAP_SIZE.x - 1;
+			if (larger_room.p2.y > MAP_SIZE.y - 1) larger_room.p2.y = MAP_SIZE.y - 1;
+
+			for (int j = 0; j < i; j++) {
+				if (overlaps(larger_room, rooms[j])) {
+					overlap = true;
+				}
+			}
+			n++;
+		} while (overlap && n < iteration_limit);
+
+		if (n == iteration_limit) {
+			room_num = i;
+			break;
+		} else {
+			rooms[i] = room;
+		}
+	}
+
+
+	for (int i = 0; i < room_num; i++) {
+		Rect room = rooms[i];
+		for (int x = room.p1.x; x < room.p2.x; x++) {
+			for (int y = room.p1.y; y < room.p2.y; y++) {
+				*map->at({x, y}) = Tile::Wall;
+			}
+		}
+	}
+
+	// Go to stability
+	for (int i = 0; i < 100; i++) {
+		map->cellular_automata_iteration();
+	}
+
+	for (int i = 0; i < room_num; i++) {
+		Rect room = rooms[i];
+		room.p1 += Vector2 {1, 1};
+		room.p2 -= Vector2 {1, 1};
+		for (int x = room.p1.x; x < room.p2.x; x++) {
+			for (int y = room.p1.y; y < room.p2.y; y++) {
+				*map->at({x, y}) = Tile::Floor;
+			}
+		}
+	}
+
 
 	// Fill edges
 	for (int x = 0; x < MAP_SIZE.x; x++) {
@@ -140,6 +222,106 @@ void random_map(Map *map, int percent) {
 		*map->at(pos2) = Tile::Wall;
 	}
 
+}
+
+void random_map(Map *map) {
+	int percent = 40;
+	pcg32_random_t gen;
+
+	seed_pcg32(&gen, 0);
+
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		if (pcg32_boundedrand_r(&gen, 100) < percent) {
+			*map->at(i) = Tile::Wall;
+		} else {
+			*map->at(i) = Tile::Floor;
+		}
+	}
+
+
+	int room_num = 20;
+	Rect rooms[room_num];
+	for (int i = 0; i < room_num; i++) {
+		Rect room;
+		bool overlap;
+		const int iteration_limit = 100;
+		int n = 0;
+		do {
+			overlap = false;
+			random_room(&room, &gen);
+
+			int border = 5;
+
+			Rect larger_room { room.p1 - Vector2 {5, 5}, room.p2 + Vector2 {5, 5}};
+			if (larger_room.p1.x < 0) larger_room.p1.x = 0;
+			if (larger_room.p1.y < 0) larger_room.p1.y = 0;
+			if (larger_room.p2.x > MAP_SIZE.x - 1) larger_room.p2.x = MAP_SIZE.x - 1;
+			if (larger_room.p2.y > MAP_SIZE.y - 1) larger_room.p2.y = MAP_SIZE.y - 1;
+
+			for (int j = 0; j < i; j++) {
+				if (overlaps(larger_room, rooms[j])) {
+					overlap = true;
+				}
+			}
+			n++;
+		} while (overlap && n < iteration_limit);
+
+		if (n == iteration_limit) {
+			room_num = i;
+			break;
+		} else {
+			rooms[i] = room;
+		}
+	}
+
+
+	for (int i = 0; i < room_num; i++) {
+		Rect room = rooms[i];
+		for (int x = room.p1.x; x < room.p2.x; x++) {
+			for (int y = room.p1.y; y < room.p2.y; y++) {
+				*map->at({x, y}) = Tile::Wall;
+			}
+		}
+	}
+
+	// Go to stability
+	for (int i = 0; i < 100; i++) {
+		map->cellular_automata_iteration();
+	}
+
+	for (int i = 0; i < room_num; i++) {
+		Rect room = rooms[i];
+		room.p1 += Vector2{1, 1};
+		room.p2 -= Vector2{1, 1};
+		for (int x = room.p1.x; x < room.p2.x; x++) {
+			for (int y = room.p1.y; y < room.p2.y; y++) {
+				*map->at({x, y}) = Tile::Floor;
+			}
+		}
+	}
+
+	// Fill edges
+	for (int x = 0; x < MAP_SIZE.x; x++) {
+		Vector2 pos1 = {x, 0};
+		Vector2 pos2 = {x, MAP_SIZE.y - 1};
+		*map->at(pos1) = Tile::Wall;
+		*map->at(pos2) = Tile::Wall;
+	}
+	for (int y = 0; y < MAP_SIZE.y; y++) {
+		Vector2 pos1 = {0, y};
+		Vector2 pos2 = {MAP_SIZE.x - 1, y};
+		*map->at(pos1) = Tile::Wall;
+		*map->at(pos2) = Tile::Wall;
+	}
+
+}
+
+void empty_map(Map *map) {
+	for (int x = 0; x < MAP_SIZE.x; x++) {
+		for (int y = 0; y < MAP_SIZE.y; y++) {
+			*map->at({x, y}) = Tile::Floor;
+		}
+	}
 }
 
 void filled_map(Map *map) {
@@ -237,7 +419,7 @@ next_iteration: ;
 	}
 }
 
-void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) {
+void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const {
 	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
 		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
 				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
@@ -256,7 +438,8 @@ void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT])
 }
 
 void clear_visibility(bool visible[MAP_TILE_COUNT]) {
-	memset(visible, false, MAP_TILE_COUNT);
+	if (visible)
+		memset(visible, false, MAP_TILE_COUNT);
 }
 
 void Map::print() const {

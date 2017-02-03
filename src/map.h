@@ -29,7 +29,7 @@ struct Map {
 	void cellular_automata_iteration();
 	void print() const;
 	void print(const Vector2 &camera_pos) const;
-	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]);
+	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const;
 
 	void visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) const;
 
@@ -40,9 +40,11 @@ void clear_visibility(bool visible[MAP_TILE_COUNT]);
 
 bool pos_in_range(const Vector2 &pos);
 
+void empty_map(Map *map);
 void filled_map(Map *map);
 void bezier(Map *map);
-void random_map(Map *map, int percent);
+void alec_random(Map *map);
+void random_map(Map *map);
 
 Vector2 index_to_pos(int i);
 int pos_to_index(const Vector2 &pos);
