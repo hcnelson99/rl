@@ -102,7 +102,7 @@ int main() {
 				break;
 			case 'r':
 				clear_visibility(visible);
-				random_map(&map);
+				cave_map(&map);
 				redraw = true;
 				break;
 			case 'e':
@@ -130,8 +130,8 @@ int main() {
 		}
 
 		if (redraw) {
-			// render_entire_map(map);
-			render(map, visible, player_pos);
+			render_entire_map(map);
+			// render(map, visible, player_pos);
 			redraw = false;
 		}
 	}

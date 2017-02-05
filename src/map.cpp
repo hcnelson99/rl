@@ -100,6 +100,13 @@ void Map::cellular_automata_iteration() {
 	}
 }
 
+void Map::smooth() {
+	// Go to stability
+	for (int i = 0; i < 100; i++) {
+		cellular_automata_iteration();
+	}
+}
+
 void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	uint64_t seed;
 	if (syscall(SYS_getrandom, &seed, sizeof(seed), 0) != 8) {
@@ -127,30 +134,18 @@ bool overlaps(const Rect &r1, const Rect &r2) {
 		    r2.p2.x < r1.p1.x || r2.p2.y < r1.p1.y);
 }
 
-void alec_random(Map *map) {
-	unsigned int percent = 40;
-	pcg32_random_t gen;
-
-	seed_pcg32(&gen, 0);
-
+void random_map(Map *map, pcg32_random_t *gen, unsigned int percent) {
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
-		if (pcg32_boundedrand_r(&gen, 100) < percent) {
+		if (pcg32_boundedrand_r(gen, 100) < percent) {
 			*map->at(i) = Tile::Wall;
 		} else {
 			*map->at(i) = Tile::Floor;
 		}
 	}
+}
 
-	// Go to stability
-	for (int i = 0; i < 100; i++) {
-		map->cellular_automata_iteration();
-	}
-
-	const int max_room_num = 20;
-	Rect rooms[max_room_num];
-
-	int room_num = max_room_num;
-
+// Returns room_num since number of requested rooms may not be placed
+int generate_random_rooms(Rect *rooms, int room_num, pcg32_random_t *gen) {
 	for (int i = 0; i < room_num; i++) {
 		Rect room;
 		bool overlap;
@@ -158,7 +153,7 @@ void alec_random(Map *map) {
 		int n = 0;
 		do {
 			overlap = false;
-			random_room(&room, &gen);
+			random_room(&room, gen);
 
 			Vector2 border = {5, 5};
 
@@ -185,32 +180,10 @@ void alec_random(Map *map) {
 	}
 
 
-	for (int i = 0; i < room_num; i++) {
-		Rect room = rooms[i];
-		for (int x = room.p1.x; x < room.p2.x; x++) {
-			for (int y = room.p1.y; y < room.p2.y; y++) {
-				*map->at({x, y}) = Tile::Wall;
-			}
-		}
-	}
+	return room_num;
+}
 
-	// Go to stability
-	for (int i = 0; i < 100; i++) {
-		map->cellular_automata_iteration();
-	}
-
-	for (int i = 0; i < room_num; i++) {
-		Rect room = rooms[i];
-		room.p1 += Vector2 {1, 1};
-		room.p2 -= Vector2 {1, 1};
-		for (int x = room.p1.x; x < room.p2.x; x++) {
-			for (int y = room.p1.y; y < room.p2.y; y++) {
-				*map->at({x, y}) = Tile::Floor;
-			}
-		}
-	}
-
-
+void fill_edges(Map *map) {
 	// Fill edges
 	for (int x = 0; x < MAP_SIZE.x; x++) {
 		Vector2 pos1 = {x, 0};
@@ -227,60 +200,7 @@ void alec_random(Map *map) {
 
 }
 
-void random_map(Map *map) {
-	unsigned int percent = 40;
-	pcg32_random_t gen;
-
-	seed_pcg32(&gen, 0);
-
-	for (int i = 0; i < MAP_TILE_COUNT; i++) {
-		if (pcg32_boundedrand_r(&gen, 100) < percent) {
-			*map->at(i) = Tile::Wall;
-		} else {
-			*map->at(i) = Tile::Floor;
-		}
-	}
-
-
-	const int max_room_num = 20;
-	Rect rooms[max_room_num];
-
-	int room_num = max_room_num;
-
-	for (int i = 0; i < room_num; i++) {
-		Rect room;
-		bool overlap;
-		const int iteration_limit = 100;
-		int n = 0;
-		do {
-			overlap = false;
-			random_room(&room, &gen);
-
-			Vector2 border = {5, 5};
-
-			Rect larger_room { room.p1 - border, room.p2 + border};
-			if (larger_room.p1.x < 0) larger_room.p1.x = 0;
-			if (larger_room.p1.y < 0) larger_room.p1.y = 0;
-			if (larger_room.p2.x > MAP_SIZE.x - 1) larger_room.p2.x = MAP_SIZE.x - 1;
-			if (larger_room.p2.y > MAP_SIZE.y - 1) larger_room.p2.y = MAP_SIZE.y - 1;
-
-			for (int j = 0; j < i; j++) {
-				if (overlaps(larger_room, rooms[j])) {
-					overlap = true;
-				}
-			}
-			n++;
-		} while (overlap && n < iteration_limit);
-
-		if (n == iteration_limit) {
-			room_num = i;
-			break;
-		} else {
-			rooms[i] = room;
-		}
-	}
-
-
+void fill_rooms(Map *map, Rect *rooms, int room_num) {
 	for (int i = 0; i < room_num; i++) {
 		Rect room = rooms[i];
 		for (int x = room.p1.x; x < room.p2.x; x++) {
@@ -289,16 +209,13 @@ void random_map(Map *map) {
 			}
 		}
 	}
+}
 
-	// Go to stability
-	for (int i = 0; i < 100; i++) {
-		map->cellular_automata_iteration();
-	}
-
+void clear_room_interiors(Map *map, Rect *rooms, int room_num) {
 	for (int i = 0; i < room_num; i++) {
 		Rect room = rooms[i];
-		room.p1 += Vector2{1, 1};
-		room.p2 -= Vector2{1, 1};
+		room.p1 += Vector2 {1, 1};
+		room.p2 -= Vector2 {1, 1};
 		for (int x = room.p1.x; x < room.p2.x; x++) {
 			for (int y = room.p1.y; y < room.p2.y; y++) {
 				*map->at({x, y}) = Tile::Floor;
@@ -306,20 +223,52 @@ void random_map(Map *map) {
 		}
 	}
 
-	// Fill edges
-	for (int x = 0; x < MAP_SIZE.x; x++) {
-		Vector2 pos1 = {x, 0};
-		Vector2 pos2 = {x, MAP_SIZE.y - 1};
-		*map->at(pos1) = Tile::Wall;
-		*map->at(pos2) = Tile::Wall;
-	}
-	for (int y = 0; y < MAP_SIZE.y; y++) {
-		Vector2 pos1 = {0, y};
-		Vector2 pos2 = {MAP_SIZE.x - 1, y};
-		*map->at(pos1) = Tile::Wall;
-		*map->at(pos2) = Tile::Wall;
-	}
+}
 
+void alec_random(Map *map) {
+	unsigned int percent = 40;
+	pcg32_random_t gen;
+
+	seed_pcg32(&gen, 0);
+
+	random_map(map, &gen, percent);
+
+	map->smooth();
+
+	const int max_room_num = 20;
+	Rect rooms[max_room_num];
+
+	int room_num = generate_random_rooms(rooms, max_room_num, &gen);
+
+	fill_rooms(map, rooms, room_num);
+
+	map->smooth();
+
+	clear_room_interiors(map, rooms, room_num);
+
+	fill_edges(map);
+}
+
+void cave_map(Map *map) {
+	unsigned int percent = 40;
+	pcg32_random_t gen;
+
+	seed_pcg32(&gen, 0);
+
+	random_map(map, &gen, percent);
+
+	const int max_room_num = 20;
+	Rect rooms[max_room_num];
+
+	int room_num = generate_random_rooms(rooms, max_room_num, &gen);
+
+	fill_rooms(map, rooms, room_num);
+
+	map->smooth();
+
+	clear_room_interiors(map, rooms, room_num);
+
+	fill_edges(map);
 }
 
 void empty_map(Map *map) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pcg_variants.h"
 #include "vector.h"
 
 const Vector2 VIEW_SIZE = {80, 24};
@@ -27,6 +28,8 @@ struct Map {
 	int count_neighbors(const Vector2 &pos) const;
 
 	void cellular_automata_iteration();
+	void smooth();
+
 	void print() const;
 	void print(const Vector2 &camera_pos) const;
 	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const;
@@ -44,7 +47,9 @@ void empty_map(Map *map);
 void filled_map(Map *map);
 void bezier(Map *map);
 void alec_random(Map *map);
-void random_map(Map *map);
+void cave_map(Map *map);
+
+void random_map(Map *map, pcg32_random_t *gen, unsigned int percent);
 
 Vector2 index_to_pos(int i);
 int pos_to_index(const Vector2 &pos);
