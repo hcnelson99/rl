@@ -1,9 +1,9 @@
 #include <ncurses.h>
+#include <stdint.h>
+#include <ncurses.h>
 #include <string.h>
 #include <syscall.h>
 #include <unistd.h>
-#include <libgen.h>
-#include <stdlib.h>
 
 #include "map.h"
 #include "log.h"
@@ -128,7 +128,7 @@ bool overlaps(const Rect &r1, const Rect &r2) {
 }
 
 void alec_random(Map *map) {
-	int percent = 40;
+	unsigned int percent = 40;
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
@@ -146,8 +146,11 @@ void alec_random(Map *map) {
 		map->cellular_automata_iteration();
 	}
 
-	int room_num = 20;
-	Rect rooms[room_num];
+	const int max_room_num = 20;
+	Rect rooms[max_room_num];
+
+	int room_num = max_room_num;
+
 	for (int i = 0; i < room_num; i++) {
 		Rect room;
 		bool overlap;
@@ -157,9 +160,9 @@ void alec_random(Map *map) {
 			overlap = false;
 			random_room(&room, &gen);
 
-			int border = 5;
+			Vector2 border = {5, 5};
 
-			Rect larger_room { room.p1 - Vector2 {5, 5}, room.p2 + Vector2 {5, 5}};
+			Rect larger_room { room.p1 - border, room.p2 + border};
 			if (larger_room.p1.x < 0) larger_room.p1.x = 0;
 			if (larger_room.p1.y < 0) larger_room.p1.y = 0;
 			if (larger_room.p2.x > MAP_SIZE.x - 1) larger_room.p2.x = MAP_SIZE.x - 1;
@@ -225,7 +228,7 @@ void alec_random(Map *map) {
 }
 
 void random_map(Map *map) {
-	int percent = 40;
+	unsigned int percent = 40;
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
@@ -239,8 +242,11 @@ void random_map(Map *map) {
 	}
 
 
-	int room_num = 20;
-	Rect rooms[room_num];
+	const int max_room_num = 20;
+	Rect rooms[max_room_num];
+
+	int room_num = max_room_num;
+
 	for (int i = 0; i < room_num; i++) {
 		Rect room;
 		bool overlap;
@@ -250,9 +256,9 @@ void random_map(Map *map) {
 			overlap = false;
 			random_room(&room, &gen);
 
-			int border = 5;
+			Vector2 border = {5, 5};
 
-			Rect larger_room { room.p1 - Vector2 {5, 5}, room.p2 + Vector2 {5, 5}};
+			Rect larger_room { room.p1 - border, room.p2 + border};
 			if (larger_room.p1.x < 0) larger_room.p1.x = 0;
 			if (larger_room.p1.y < 0) larger_room.p1.y = 0;
 			if (larger_room.p2.x > MAP_SIZE.x - 1) larger_room.p2.x = MAP_SIZE.x - 1;

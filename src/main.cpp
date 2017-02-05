@@ -1,5 +1,4 @@
 #include <ncurses.h>
-#include <stdio.h>
 
 #include "map.h"
 #include "log.h"
@@ -93,7 +92,6 @@ int main() {
 			break;
 		}
 
-		int fill_pct = -1;
 		Vector2 move = {0, 0};
 
 		switch (c) {
