@@ -225,37 +225,16 @@ void clear_room_interiors(Map *map, Rect *rooms, int room_num) {
 
 }
 
-void alec_random(Map *map) {
-	unsigned int percent = 40;
+void cave_map(Map *map, bool alec_gen_caves_before_rooms) {
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
 
-	random_map(map, &gen, percent);
+	random_map(map, &gen, 40);
 
-	map->smooth();
-
-	const int max_room_num = 20;
-	Rect rooms[max_room_num];
-
-	int room_num = generate_random_rooms(rooms, max_room_num, &gen);
-
-	fill_rooms(map, rooms, room_num);
-
-	map->smooth();
-
-	clear_room_interiors(map, rooms, room_num);
-
-	fill_edges(map);
-}
-
-void cave_map(Map *map) {
-	unsigned int percent = 40;
-	pcg32_random_t gen;
-
-	seed_pcg32(&gen, 0);
-
-	random_map(map, &gen, percent);
+	if (alec_gen_caves_before_rooms) {
+		map->smooth();
+	}
 
 	const int max_room_num = 20;
 	Rect rooms[max_room_num];

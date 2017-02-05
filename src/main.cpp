@@ -102,12 +102,12 @@ int main() {
 				break;
 			case 'r':
 				clear_visibility(visible);
-				cave_map(&map);
+				cave_map(&map, false);
 				redraw = true;
 				break;
 			case 'e':
 				clear_visibility(visible);
-				alec_random(&map);
+				cave_map(&map, true);
 				redraw = true;
 				break;
 			case 'w':
