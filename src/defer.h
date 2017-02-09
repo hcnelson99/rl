@@ -1,3 +1,5 @@
+#pragma once
+
 template <typename F>
 struct Defer {
 	Defer(F f) : f(f) {}
