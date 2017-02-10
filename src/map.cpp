@@ -5,6 +5,10 @@
 #include <syscall.h>
 #include <unistd.h>
 
+#include <vector>
+#include <queue>
+#include <algorithm>
+
 #include "map.h"
 #include "log.h"
 #include "pcg_variants.h"
@@ -306,7 +310,7 @@ void bezier(Map *map) {
 			for (int i = -1; i <= 1; i++) {
 				for (int j = -1; j <= 1; j++) {
 					if (pcg32_boundedrand_r(&gen, 100) < 60) {
-						*map->at({x + i, y + j}) = Tile::Floor;
+						*map->at({(int)(x + i), (int)(y + j)}) = Tile::Floor;
 					}
 				}
 			}
@@ -341,7 +345,7 @@ void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) co
 		double x = player_pos.x;
 		double y = player_pos.y;
 		for (int i = 0; i < steps; i++) {
-			if (*at({x, y}) == Tile::Wall) {
+			if (*at({(int)x, (int)y}) == Tile::Wall) {
 				// visible[t] = false;
 				goto next_iteration;
 			}
@@ -385,6 +389,70 @@ void Map::print() const {
 	}
 
 }
+
+template <class T>
+bool contains(const std::vector<T> &v, const T &e) {
+	return std::find(std::begin(v), std::end(v), e) != std::end(v);
+}
+
+void Map::floodfill_print() const {
+	std::vector<Vector2> visited;
+	std::vector<std::vector<Vector2>> regions;
+
+
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		Vector2 pos = index_to_pos(i);
+
+		if (*at(i) == Tile::Floor && !contains(visited, pos)) {
+			std::queue<Vector2> queue;
+			std::vector<Vector2> pocket;
+
+			queue.push(pos);
+			pocket.push_back(pos);
+			do {
+				pos = queue.front();
+				queue.pop();
+
+				for (const Vector2 &o : {Vector2{-1, 0}, Vector2{1, 0}, Vector2{0, -1}, Vector2{0, 1}}) {
+					Vector2 adj = pos + o;
+					if (pos_in_range(adj) && *at(adj) == Tile::Floor && !contains(pocket, adj)) {
+						queue.push(adj);
+						pocket.push_back(adj);
+					}
+				}
+
+
+			} while (!queue.empty());
+
+			visited.insert(std::end(visited), std::begin(pocket), std::end(pocket));
+			regions.push_back(pocket);
+		}
+	}
+
+	for (int y = 0; y < MAP_SIZE.y; y++) {
+		for (int x = 0; x < MAP_SIZE.x; x++) {
+			Vector2 pos = {x, y};
+			if (*at(pos) == Tile::Wall) {
+				printw(".");
+
+			} else {
+				bool found = false;
+				for (unsigned int i = 0; i < regions.size(); i++) {
+					if (contains(regions[i], pos)) {
+						printw("%c", 'A' + i);
+						found = true;
+					}
+				}
+				if (!found) {
+					printw("@");
+				}
+			}
+		}
+		printw("\n");
+	}
+
+}
+
 void Map::print(const Vector2 &camera_pos) const {
 	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
 		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",

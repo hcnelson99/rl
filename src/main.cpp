@@ -41,7 +41,7 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 void render_entire_map(const Map &map) {
 	erase();
-	map.print();
+	map.floodfill_print();
 	refresh();
 }
 
@@ -78,7 +78,7 @@ int main() {
 	bool visible[MAP_TILE_COUNT];
 	clear_visibility(visible);
 
-	empty_map(&map);
+	cave_map(&map, false);
 
 	// Player's center
 	Vector2 player_pos = MAP_SIZE / 2;

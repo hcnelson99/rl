@@ -31,6 +31,7 @@ struct Map {
 	void smooth();
 
 	void print() const;
+	void floodfill_print() const;
 	void print(const Vector2 &camera_pos) const;
 	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const;
 
