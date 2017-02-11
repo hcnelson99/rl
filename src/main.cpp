@@ -143,7 +143,7 @@ int main() {
 				path_map.smooth(&map);
 
 				int min = PATH_MAP_MAX;
-				for (const Vector2 &o : ADJACENTS) {
+				for (const Vector2 &o : ORTHOGONALS) {
 					Vector2 pos = player_pos + o;
 					if (*path_map.at(pos) < min) {
 						move = o;

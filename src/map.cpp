@@ -105,6 +105,9 @@ void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	if (syscall(SYS_getrandom, &seed, sizeof(seed), 0) != 8) {
 		ERROR("Could not seed generator");
 	}
+
+	LOG("seed: %lu", seed);
+
 	pcg32_srandom_r(rng, seed, initseq);
 }
 
@@ -394,7 +397,6 @@ void bezier(Map *map) {
 void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) const {
 	for (int t = 0; t < MAP_TILE_COUNT; t++) {
 		Vector2 p1 = index_to_pos(t);
-		LOG("%d %d", p1.x, p1.y);
 
 		int dx = p1.x - player_pos.x;
 		int dy = p1.y - player_pos.y;
