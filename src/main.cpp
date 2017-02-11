@@ -41,6 +41,7 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 void render_entire_map(const Map &map) {
 	erase();
+	// map.print();
 	map.floodfill_print();
 	refresh();
 }

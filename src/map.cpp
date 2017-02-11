@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <vector>
+#include <unordered_set>
 #include <queue>
 #include <algorithm>
 
@@ -391,13 +392,13 @@ void Map::print() const {
 }
 
 template <class T>
-bool contains(const std::vector<T> &v, const T &e) {
-	return std::find(std::begin(v), std::end(v), e) != std::end(v);
+bool contains(const std::unordered_set<T> &s, const T &e) {
+	return s.find(e) != s.end();
 }
 
 void Map::floodfill_print() const {
-	std::vector<Vector2> visited;
-	std::vector<std::vector<Vector2>> regions;
+	std::unordered_set<Vector2> visited;
+	std::vector<std::unordered_set<Vector2>> regions;
 
 
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
@@ -405,10 +406,10 @@ void Map::floodfill_print() const {
 
 		if (*at(i) == Tile::Floor && !contains(visited, pos)) {
 			std::queue<Vector2> queue;
-			std::vector<Vector2> pocket;
+			std::unordered_set<Vector2> pocket;
 
 			queue.push(pos);
-			pocket.push_back(pos);
+			pocket.insert(pos);
 			do {
 				pos = queue.front();
 				queue.pop();
@@ -417,14 +418,14 @@ void Map::floodfill_print() const {
 					Vector2 adj = pos + o;
 					if (pos_in_range(adj) && *at(adj) == Tile::Floor && !contains(pocket, adj)) {
 						queue.push(adj);
-						pocket.push_back(adj);
+						pocket.insert(adj);
 					}
 				}
 
 
 			} while (!queue.empty());
 
-			visited.insert(std::end(visited), std::begin(pocket), std::end(pocket));
+			visited.insert(std::begin(pocket), std::end(pocket));
 			regions.push_back(pocket);
 		}
 	}
@@ -441,6 +442,7 @@ void Map::floodfill_print() const {
 					if (contains(regions[i], pos)) {
 						printw("%c", 'A' + i);
 						found = true;
+						break;
 					}
 				}
 				if (!found) {

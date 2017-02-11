@@ -30,3 +30,4 @@ bool Vector2::operator==(const Vector2 &v) const {
 bool Vector2::operator!=(const Vector2 &v) const {
 	return !((*this) == v);
 }
+
