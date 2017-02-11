@@ -4,6 +4,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <vector>
 #include <unordered_set>
@@ -32,34 +33,24 @@ bool index_in_range(int i) {
 }
 
 Tile *Map::at(const Vector2 &pos) {
-	if (!pos_in_range(pos)) {
-		CRITICAL("Map index out of range!: %d %d", pos.x, pos.y);
-	}
+	assert(pos_in_range(pos));
 	return &map[pos_to_index(pos)];
 }
 const Tile *Map::at(const Vector2 &pos) const {
-	if (!pos_in_range(pos)) {
-		CRITICAL("Map index out of range!: %d %d", pos.x, pos.y);
-	}
+	assert(pos_in_range(pos));
 	return &map[pos_to_index(pos)];
 }
 Tile *Map::at(int i) {
-	if (!index_in_range(i)) {
-		CRITICAL("Map index out of range!: %d", i);
-	}
+	assert(index_in_range(i));
 	return &map[i];
 }
 const Tile *Map::at(int i) const {
-	if (!index_in_range(i)) {
-		CRITICAL("Map index out of range!: %d", i);
-	}
+	assert(index_in_range(i));
 	return &map[i];
 }
 
 bool Map::occupied(const Vector2 &pos) const {
-	if (!pos_in_range(pos)) {
-		CRITICAL("Map index out of range!: %d %d", pos.x, pos.y);
-	}
+	assert(pos_in_range(pos));
 	return *at(pos) == Tile::Wall;
 }
 
@@ -102,9 +93,8 @@ void Map::smooth() {
 
 void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	uint64_t seed;
-	if (syscall(SYS_getrandom, &seed, sizeof(seed), 0) != 8) {
-		ERROR("Could not seed generator");
-	}
+
+	assert(syscall(SYS_getrandom, &seed, sizeof(seed), 0) == 8);
 
 	LOG("seed: %lu", seed);
 
@@ -422,10 +412,7 @@ next_iteration: ;
 }
 
 void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const {
-	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
-		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
-				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
-	}
+	assert(pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1}));
 
 	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
 		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
@@ -484,10 +471,7 @@ void Map::floodfill_print() const {
 }
 
 void Map::print(const Vector2 &camera_pos) const {
-	if (!pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1})) {
-		CRITICAL("Position (%d + %d, %d + %d) too far for map size %d, %d",
-				camera_pos.x, VIEW_SIZE.x, camera_pos.y, VIEW_SIZE.y, MAP_SIZE.x, MAP_SIZE.y);
-	}
+	assert(pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1}));
 
 	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
 		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {

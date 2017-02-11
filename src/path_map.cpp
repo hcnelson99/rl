@@ -1,6 +1,8 @@
 #include "path_map.h"
 
 #include <string.h>
+#include <assert.h>
+
 #include "util.h"
 
 PathMap::PathMap() {
@@ -10,27 +12,19 @@ PathMap::PathMap() {
 }
 
 int *PathMap::at(const Vector2 &pos) {
-	if (!pos_in_range(pos)) {
-		CRITICAL("PathMap index out of range!: %d %d", pos.x, pos.y);
-	}
+	assert(pos_in_range(pos));
 	return &map[pos_to_index(pos)];
 }
 const int *PathMap::at(const Vector2 &pos) const {
-	if (!pos_in_range(pos)) {
-		CRITICAL("PathMap index out of range!: %d %d", pos.x, pos.y);
-	}
+	assert(pos_in_range(pos));
 	return &map[pos_to_index(pos)];
 }
 int *PathMap::at(int i) {
-	if (!index_in_range(i)) {
-		CRITICAL("PathMap index out of range!: %d", i);
-	}
+	assert(index_in_range(i));
 	return &map[i];
 }
 const int *PathMap::at(int i) const {
-	if (!index_in_range(i)) {
-		CRITICAL("PathMap index out of range!: %d", i);
-	}
+	assert(index_in_range(i));
 	return &map[i];
 }
 

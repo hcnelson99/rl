@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ncurses.h>
 
 #include "map.h"
@@ -33,6 +34,8 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 	if (*map.at(new_player_pos) == Tile::Floor) {
 		*player_pos = new_player_pos;
+	} else {
+		assert(false);
 	}
 
 
@@ -136,7 +139,7 @@ int main() {
 				PathMap path_map;
 				map.visibility(player_pos, visible);
 				for (int i = 0; i < MAP_TILE_COUNT; i++) {
-					if (*map.at(i) == Tile::Floor && !visible[i]) {
+					if (!visible[i]) {
 						path_map.set_goal(i);
 					}
 				}
