@@ -11,6 +11,24 @@ const Vector2 MAP_SIZE = {235, 73};
 
 const int MAP_TILE_COUNT = MAP_SIZE.x * MAP_SIZE.y;
 
+const Vector2 ADJACENTS[8] = {
+	{1, 1},
+	{1, 0},
+	{1, -1},
+	{0, 1},
+	{0, -1},
+	{-1, 1},
+	{-1, 0},
+	{-1, -1},
+};
+
+const Vector2 ORTHOGONALS[4] = {
+	{-1, 0},
+	{1, 0},
+	{0, -1},
+	{0, 1},
+};
+
 enum class Tile {
 	Wall,
 	Floor,
@@ -53,3 +71,6 @@ void random_map(Map *map, pcg32_random_t *gen, unsigned int percent);
 
 Vector2 index_to_pos(int i);
 int pos_to_index(const Vector2 &pos);
+
+bool pos_in_range(const Vector2 &pos);
+bool index_in_range(int i);

@@ -11,7 +11,8 @@
 #include <algorithm>
 
 #include "map.h"
-#include "log.h"
+#include "util.h"
+#include "path_map.h"
 #include "pcg_variants.h"
 
 Vector2 index_to_pos(int i) {
@@ -61,19 +62,6 @@ bool Map::occupied(const Vector2 &pos) const {
 	}
 	return *at(pos) == Tile::Wall;
 }
-
-#define ARRAY_LEN(x) sizeof(x)/sizeof(x[0])
-
-const Vector2 ADJACENTS[] = {
-	{1, 1},
-	{1, 0},
-	{1, -1},
-	{0, 1},
-	{0, -1},
-	{-1, 1},
-	{-1, 0},
-	{-1, -1},
-};
 
 int Map::count_neighbors(const Vector2 &pos) const {
 	int neighbors = 0;
@@ -253,7 +241,7 @@ std::vector<std::unordered_set<Vector2>> floodfill(const Map &map) {
 				pos = queue.front();
 				queue.pop();
 
-				for (const Vector2 &o : {Vector2{-1, 0}, Vector2{1, 0}, Vector2{0, -1}, Vector2{0, 1}}) {
+				for (const Vector2 &o : ORTHOGONALS) {
 					Vector2 adj = pos + o;
 					if (pos_in_range(adj) && *map.at(adj) == Tile::Floor && !contains(pocket, adj)) {
 						queue.push(adj);
@@ -347,10 +335,6 @@ void filled_map(Map *map) {
 		}
 	}
 }
-
-
-#define min(x, y) (x < y ? x : y)
-#define max(x, y) (x > y ? x : y)
 
 Vector2 bezier3(const Vector2 &p0, const Vector2 &p1, const Vector2 &p2, double t) {
 	double x = (1 - t * t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;

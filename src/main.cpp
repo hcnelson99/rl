@@ -1,8 +1,8 @@
 #include <ncurses.h>
 
 #include "map.h"
-#include "log.h"
-#include "defer.h"
+#include "util.h"
+#include "path_map.h"
 
 WINDOW* init_win() {
 	WINDOW *win = initscr();
@@ -94,13 +94,15 @@ int main() {
 	bool redraw = true;
 
 	while (true) {
-		int c = getch();
+		// int c = getch();
+		int c = ' ';
 
 		if (c == 'q') {
 			break;
 		}
 
 		Vector2 move = {0, 0};
+
 
 		switch (c) {
 			case 'c':
@@ -129,6 +131,26 @@ int main() {
 				break;
 			case 'd':
 				move = Vector2{1, 0};
+				break;
+			case ' ':
+				PathMap path_map;
+				map.visibility(player_pos, visible);
+				for (int i = 0; i < MAP_TILE_COUNT; i++) {
+					if (*map.at(i) == Tile::Floor && !visible[i]) {
+						path_map.set_goal(i);
+					}
+				}
+				path_map.smooth(&map);
+
+				int min = PATH_MAP_MAX;
+				for (const Vector2 &o : ADJACENTS) {
+					Vector2 pos = player_pos + o;
+					if (*path_map.at(pos) < min) {
+						move = o;
+						min = *path_map.at(pos);
+					}
+				}
+
 				break;
 		}
 

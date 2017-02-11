@@ -1,6 +1,7 @@
+#include "util.h"
+
 #include <stdio.h>
 
-#include "log.h"
 
 const char *log_level_string(LogLevel log_level) {
 	const char * log_level_strings[] = {
