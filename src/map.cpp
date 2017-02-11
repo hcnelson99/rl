@@ -230,6 +230,81 @@ void clear_room_interiors(Map *map, Rect *rooms, int room_num) {
 
 }
 
+template <class T>
+bool contains(const std::unordered_set<T> &s, const T &e) {
+	return s.find(e) != s.end();
+}
+
+std::vector<std::unordered_set<Vector2>> floodfill(const Map &map) {
+	std::vector<std::unordered_set<Vector2>> regions;
+	std::unordered_set<Vector2> visited;
+
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		Vector2 pos = index_to_pos(i);
+
+		if (*map.at(i) == Tile::Floor && !contains(visited, pos)) {
+			std::queue<Vector2> queue;
+			std::unordered_set<Vector2> pocket;
+
+			queue.push(pos);
+			pocket.insert(pos);
+
+			do {
+				pos = queue.front();
+				queue.pop();
+
+				for (const Vector2 &o : {Vector2{-1, 0}, Vector2{1, 0}, Vector2{0, -1}, Vector2{0, 1}}) {
+					Vector2 adj = pos + o;
+					if (pos_in_range(adj) && *map.at(adj) == Tile::Floor && !contains(pocket, adj)) {
+						queue.push(adj);
+						pocket.insert(adj);
+					}
+				}
+
+
+			} while (!queue.empty());
+
+			visited.insert(std::begin(pocket), std::end(pocket));
+			regions.push_back(pocket);
+		}
+	}
+
+	return regions;
+}
+
+void connect_regions(Map *map) {
+	std::vector<std::unordered_set<Vector2>> regions = floodfill(*map);
+
+	while (regions.size() > 1) {
+		int min_dist = MAP_SIZE.x + MAP_SIZE.y;
+		Vector2 min1, min2;
+		for (unsigned int i = 1; i < regions.size(); i++) {
+			for (Vector2 pos1 : regions[0]) {
+				for (Vector2 pos2 : regions[i]) {
+					int dist = abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y);
+					if (dist < min_dist) {
+						min_dist = dist;
+						min1 = pos1;
+						min2 = pos2;
+					}
+				}
+			}
+		}
+
+		while (min1 != min2) {
+			if (abs(min1.x - min2.x) > abs(min1.y - min2.y)) {
+				min1.x += min1.x < min2.x ? 1 : -1;
+			} else {
+				min1.y += min1.y < min2.y ? 1 : -1;
+			}
+			*map->at(min1) = Tile::Floor;
+		}
+
+
+		regions = floodfill(*map);
+	}
+}
+
 void cave_map(Map *map, bool alec_gen_caves_before_rooms) {
 	pcg32_random_t gen;
 
@@ -253,6 +328,8 @@ void cave_map(Map *map, bool alec_gen_caves_before_rooms) {
 	clear_room_interiors(map, rooms, room_num);
 
 	fill_edges(map);
+
+	connect_regions(map);
 }
 
 void empty_map(Map *map) {
@@ -391,44 +468,9 @@ void Map::print() const {
 
 }
 
-template <class T>
-bool contains(const std::unordered_set<T> &s, const T &e) {
-	return s.find(e) != s.end();
-}
-
 void Map::floodfill_print() const {
-	std::unordered_set<Vector2> visited;
-	std::vector<std::unordered_set<Vector2>> regions;
 
-
-	for (int i = 0; i < MAP_TILE_COUNT; i++) {
-		Vector2 pos = index_to_pos(i);
-
-		if (*at(i) == Tile::Floor && !contains(visited, pos)) {
-			std::queue<Vector2> queue;
-			std::unordered_set<Vector2> pocket;
-
-			queue.push(pos);
-			pocket.insert(pos);
-			do {
-				pos = queue.front();
-				queue.pop();
-
-				for (const Vector2 &o : {Vector2{-1, 0}, Vector2{1, 0}, Vector2{0, -1}, Vector2{0, 1}}) {
-					Vector2 adj = pos + o;
-					if (pos_in_range(adj) && *at(adj) == Tile::Floor && !contains(pocket, adj)) {
-						queue.push(adj);
-						pocket.insert(adj);
-					}
-				}
-
-
-			} while (!queue.empty());
-
-			visited.insert(std::begin(pocket), std::end(pocket));
-			regions.push_back(pocket);
-		}
-	}
+	std::vector<std::unordered_set<Vector2>> regions = floodfill(*this);
 
 	for (int y = 0; y < MAP_SIZE.y; y++) {
 		for (int x = 0; x < MAP_SIZE.x; x++) {

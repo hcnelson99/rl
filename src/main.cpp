@@ -9,7 +9,7 @@ WINDOW* init_win() {
 	noecho();
 	curs_set(0);
 	// halfdelay(1);
-	nodelay(win, true);
+	// nodelay(win, true);
 	keypad(win, true);
 	return win;
 }
@@ -41,8 +41,8 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 void render_entire_map(const Map &map) {
 	erase();
-	// map.print();
-	map.floodfill_print();
+	map.print();
+	// map.floodfill_print();
 	refresh();
 }
 
@@ -81,8 +81,15 @@ int main() {
 
 	cave_map(&map, false);
 
-	// Player's center
-	Vector2 player_pos = MAP_SIZE / 2;
+
+	// Player position
+	Vector2 player_pos;
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		if (*map.at(i) == Tile::Floor) {
+			player_pos = index_to_pos(i);
+			break;
+		}
+	}
 
 	bool redraw = true;
 
@@ -131,8 +138,8 @@ int main() {
 		}
 
 		if (redraw) {
-			render_entire_map(map);
-			// render(map, visible, player_pos);
+			// render_entire_map(map);
+			render(map, visible, player_pos);
 			redraw = false;
 		}
 	}
