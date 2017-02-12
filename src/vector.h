@@ -5,14 +5,37 @@
 
 struct Vector2 {
 	int x, y;
-	Vector2 operator+(const Vector2 &v) const;
-	Vector2 operator-(const Vector2 &v) const;
-	Vector2 operator*(int r) const;
-	Vector2 operator/(int r) const;
-	void operator+=(const Vector2 &v);
-	void operator-=(const Vector2 &v);
-	bool operator==(const Vector2 &v) const;
-	bool operator!=(const Vector2 &v) const;
+
+	inline Vector2 operator+(const Vector2 &v) const {
+		return {x + v.x, y + v.y};
+	}
+
+	inline Vector2 operator-(const Vector2 &v) const {
+		return {x - v.x, y - v.y};
+	}
+
+	inline Vector2 operator*(int r) const {
+		return {x * r, y * r};
+	}
+
+	inline Vector2 operator/(int r) const {
+		return {x / r, y / r};
+	}
+
+	inline void operator+=(const Vector2 &v) {
+		(*this) = (*this) + v;
+	}
+
+	inline void operator-=(const Vector2 &v) {
+		(*this) = (*this) - v;
+	}
+
+	inline bool operator==(const Vector2 &v) const {
+		return x == v.x && y == v.y;
+	}
+	inline bool operator!=(const Vector2 &v) const {
+		return !((*this) == v);
+	}
 };
 
 template <class T>

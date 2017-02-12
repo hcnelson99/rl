@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 #include "pcg_variants.h"
 #include "vector.h"
 
@@ -34,15 +36,51 @@ enum class Tile {
 	Floor,
 };
 
+inline Vector2 index_to_pos(int i) {
+	return {i % MAP_SIZE.x, i / MAP_SIZE.x};
+}
+
+inline int pos_to_index(const Vector2 &pos) {
+	return pos.y * MAP_SIZE.x + pos.x;
+}
+
+inline bool pos_in_range(const Vector2 &pos) {
+	return pos.y >= 0 && pos.y < MAP_SIZE.y && pos.x >= 0 && pos.x < MAP_SIZE.x;
+}
+
+inline bool index_in_range(int i) {
+	return i >= 0 && i < MAP_TILE_COUNT;
+}
+
 struct Map {
 	Tile map[MAP_TILE_COUNT];
 
-	Tile *at(const Vector2 &pos);
-	const Tile *at(const Vector2 &pos) const;
-	Tile *at(int i);
-	const Tile *at(int i) const;
 
-	bool occupied(const Vector2 &pos) const;
+	inline Tile *at(const Vector2 &pos) {
+		assert(pos_in_range(pos));
+		return &map[pos_to_index(pos)];
+	}
+
+	inline const Tile *at(const Vector2 &pos) const {
+		assert(pos_in_range(pos));
+		return &map[pos_to_index(pos)];
+	}
+
+	inline Tile *at(int i) {
+		assert(index_in_range(i));
+		return &map[i];
+	}
+
+	inline const Tile *at(int i) const {
+		assert(index_in_range(i));
+		return &map[i];
+	}
+
+	inline bool occupied(const Vector2 &pos) const {
+		assert(pos_in_range(pos));
+		return *at(pos) == Tile::Wall;
+	}
+
 	int count_neighbors(const Vector2 &pos) const;
 
 	void cellular_automata_iteration();
@@ -54,6 +92,9 @@ struct Map {
 	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const;
 
 	void visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) const;
+
+	bool operator==(const Map &o) const;
+	bool operator!=(const Map &o) const;
 
 };
 
@@ -68,9 +109,3 @@ void bezier(Map *map);
 void cave_map(Map *map, bool alec_gen_caves_before_rooms);
 
 void random_map(Map *map, pcg32_random_t *gen, unsigned int percent);
-
-Vector2 index_to_pos(int i);
-int pos_to_index(const Vector2 &pos);
-
-bool pos_in_range(const Vector2 &pos);
-bool index_in_range(int i);

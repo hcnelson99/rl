@@ -4,7 +4,6 @@
 #include <string.h>
 #include <syscall.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include <vector>
 #include <unordered_set>
@@ -15,44 +14,6 @@
 #include "util.h"
 #include "path_map.h"
 #include "pcg_variants.h"
-
-Vector2 index_to_pos(int i) {
-	return {i % MAP_SIZE.x, i / MAP_SIZE.x};
-}
-
-int pos_to_index(const Vector2 &pos) {
-	return pos.y * MAP_SIZE.x + pos.x;
-}
-
-bool pos_in_range(const Vector2 &pos) {
-	return pos.y >= 0 && pos.y < MAP_SIZE.y && pos.x >= 0 && pos.x < MAP_SIZE.x;
-}
-
-bool index_in_range(int i) {
-	return i >= 0 && i < MAP_TILE_COUNT;
-}
-
-Tile *Map::at(const Vector2 &pos) {
-	assert(pos_in_range(pos));
-	return &map[pos_to_index(pos)];
-}
-const Tile *Map::at(const Vector2 &pos) const {
-	assert(pos_in_range(pos));
-	return &map[pos_to_index(pos)];
-}
-Tile *Map::at(int i) {
-	assert(index_in_range(i));
-	return &map[i];
-}
-const Tile *Map::at(int i) const {
-	assert(index_in_range(i));
-	return &map[i];
-}
-
-bool Map::occupied(const Vector2 &pos) const {
-	assert(pos_in_range(pos));
-	return *at(pos) == Tile::Wall;
-}
 
 int Map::count_neighbors(const Vector2 &pos) const {
 	int neighbors = 0;
@@ -84,11 +45,25 @@ void Map::cellular_automata_iteration() {
 	}
 }
 
-void Map::smooth() {
-	// Go to stability
-	for (int i = 0; i < 100; i++) {
-		cellular_automata_iteration();
+bool Map::operator==(const Map &o) const {
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		if (*at(i) != *o.at(i)) {
+			return false;
+		}
 	}
+	return true;
+}
+
+bool Map::operator!=(const Map &o) const {
+	return !(*this == o);
+}
+
+void Map::smooth() {
+	Map old_map;
+	do {
+		memcpy(&old_map, this, sizeof(Map));
+		cellular_automata_iteration();
+	} while (old_map != *this);
 }
 
 void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
@@ -260,6 +235,7 @@ void connect_regions(Map *map) {
 	while (regions.size() > 1) {
 		int min_dist = MAP_SIZE.x + MAP_SIZE.y;
 		Vector2 min1, min2;
+
 		for (unsigned int i = 1; i < regions.size(); i++) {
 			for (Vector2 pos1 : regions[0]) {
 				for (Vector2 pos2 : regions[i]) {
