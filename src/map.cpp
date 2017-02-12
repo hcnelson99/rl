@@ -94,7 +94,8 @@ void Map::smooth() {
 void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
 	uint64_t seed;
 
-	assert(syscall(SYS_getrandom, &seed, sizeof(seed), 0) == 8);
+	int ret = syscall(SYS_getrandom, &seed, sizeof(seed), 0);
+	assert(ret == sizeof(seed));
 
 	LOG("seed: %lu", seed);
 
