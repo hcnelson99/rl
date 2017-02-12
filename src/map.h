@@ -9,9 +9,11 @@ const Vector2 VIEW_SIZE = {80, 24};
 const Vector2 HALF_SCREEN = VIEW_SIZE / 2;
 
 // const Vector2 MAP_SIZE = {400, 80};
-const Vector2 MAP_SIZE = {235, 73};
+#define MAP_X 235
+#define MAP_Y 73
+const Vector2 MAP_SIZE = {MAP_X, MAP_Y};
 
-const int MAP_TILE_COUNT = MAP_SIZE.x * MAP_SIZE.y;
+#define MAP_TILE_COUNT (MAP_X * MAP_Y)
 
 const Vector2 ADJACENTS[8] = {
 	{1, 1},
