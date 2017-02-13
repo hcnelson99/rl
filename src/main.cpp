@@ -34,11 +34,7 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 	if (*map.at(new_player_pos) == Tile::Floor) {
 		*player_pos = new_player_pos;
-	} else {
-		assert(false);
 	}
-
-
 }
 
 
@@ -97,8 +93,7 @@ int main() {
 	bool redraw = true;
 
 	while (true) {
-		// int c = getch();
-		int c = ' ';
+		int c = getch();
 
 		if (c == 'q') {
 			break;
