@@ -1,5 +1,10 @@
 #pragma once
 
+#include <stdio.h>
+#include <libgen.h>
+#include <time.h>
+#include <unordered_set>
+
 template <typename F>
 struct Defer {
 	Defer(F f) : f(f) {}
@@ -22,9 +27,10 @@ Defer<F> make_defer(F f) {
 #define min(x, y) (x < y ? x : y)
 #define max(x, y) (x > y ? x : y)
 
-#include <stdio.h>
-#include <libgen.h>
-#include <time.h>
+template <class T>
+bool contains(const std::unordered_set<T> &s, const T &e) {
+	return s.find(e) != s.end();
+}
 
 enum class LogLevel {
 	Critical = 0,

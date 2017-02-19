@@ -1,6 +1,8 @@
 #pragma once
 
 #include <assert.h>
+#include <vector>
+#include <unordered_set>
 
 #include "pcg_variants.h"
 #include "vector.h"
@@ -88,11 +90,6 @@ struct Map {
 	void cellular_automata_iteration();
 	void smooth();
 
-	void print() const;
-	void floodfill_print() const;
-	void print(const Vector2 &camera_pos) const;
-	void print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const;
-
 	void visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) const;
 
 	bool operator==(const Map &o) const;
@@ -101,6 +98,8 @@ struct Map {
 };
 
 void clear_visibility(bool visible[MAP_TILE_COUNT]);
+
+std::vector<std::unordered_set<Vector2>> floodfill(const Map &map);
 
 
 bool pos_in_range(const Vector2 &pos);

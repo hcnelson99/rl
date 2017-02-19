@@ -1,12 +1,8 @@
-#include <ncurses.h>
 #include <stdint.h>
-#include <ncurses.h>
 #include <string.h>
 #include <syscall.h>
 #include <unistd.h>
 
-#include <vector>
-#include <unordered_set>
 #include <queue>
 #include <algorithm>
 
@@ -185,11 +181,6 @@ void clear_room_interiors(Map *map, Rect *rooms, int room_num) {
 		}
 	}
 
-}
-
-template <class T>
-bool contains(const std::unordered_set<T> &s, const T &e) {
-	return s.find(e) != s.end();
 }
 
 std::vector<std::unordered_set<Vector2>> floodfill(const Map &map) {
@@ -388,73 +379,7 @@ next_iteration: ;
 	}
 }
 
-void Map::print_visible(const Vector2 &camera_pos, bool visible[MAP_TILE_COUNT]) const {
-	assert(pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1}));
-
-	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
-		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
-			if (visible[pos_to_index({x, y})]) {
-				printw("%s", *at({x, y}) == Tile::Wall ? "#" : ".");
-			} else {
-				printw(" ");
-			}
-		}
-		printw("\n");
-	}
-}
-
 void clear_visibility(bool visible[MAP_TILE_COUNT]) {
 	if (visible)
 		memset(visible, false, MAP_TILE_COUNT);
-}
-
-void Map::print() const {
-	for (int y = 0; y < MAP_SIZE.y; y++) {
-		for (int x = 0; x < MAP_SIZE.x; x++) {
-			printw("%s", *at({x, y}) == Tile::Wall ? "#" : " ");
-		}
-		printw("\n");
-	}
-
-}
-
-void Map::floodfill_print() const {
-
-	std::vector<std::unordered_set<Vector2>> regions = floodfill(*this);
-
-	for (int y = 0; y < MAP_SIZE.y; y++) {
-		for (int x = 0; x < MAP_SIZE.x; x++) {
-			Vector2 pos = {x, y};
-			if (*at(pos) == Tile::Wall) {
-				printw(".");
-
-			} else {
-				bool found = false;
-				for (unsigned int i = 0; i < regions.size(); i++) {
-					if (contains(regions[i], pos)) {
-						printw("%c", 'A' + i);
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					printw("@");
-				}
-			}
-		}
-		printw("\n");
-	}
-
-}
-
-void Map::print(const Vector2 &camera_pos) const {
-	assert(pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1}));
-
-	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
-		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
-			printw("%s", *at({x, y}) == Tile::Wall ? "#" : " ");
-		}
-		printw("\n");
-	}
-
 }

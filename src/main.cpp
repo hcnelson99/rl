@@ -4,6 +4,7 @@
 #include "map.h"
 #include "util.h"
 #include "path_map.h"
+#include "ncurses_render.h"
 
 WINDOW* init_win() {
 	WINDOW *win = initscr();
@@ -40,8 +41,8 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 void render_entire_map(const Map &map) {
 	erase();
-	map.print();
-	// map.floodfill_print();
+	ncurses_render(map);
+	// ncurses_floodfill_render(map);
 	refresh();
 }
 
@@ -54,9 +55,9 @@ void render(const Map &map, bool visible[MAP_TILE_COUNT],
 
 	if (visible) {
 		map.visibility(player_pos, visible);
-		map.print_visible(camera_pos, visible);
+		ncurses_render_visible(map, camera_pos, visible);
 	} else {
-		map.print(camera_pos);
+		ncurses_render(map, camera_pos);
 	}
 
 	Vector2 player_screen_location = player_pos - camera_pos;
