@@ -1,10 +1,18 @@
-#include <ncurses.h>
-
 #include <vector>
 #include <unordered_set>
 
 #include "ncurses_render.h"
 #include "util.h"
+
+WINDOW* ncurses_init_win() {
+	WINDOW *win = initscr();
+	noecho();
+	curs_set(0);
+	// halfdelay(1);
+	// nodelay(win, true);
+	keypad(win, true);
+	return win;
+}
 
 void ncurses_render(const Map &map) {
 	for (int y = 0; y < MAP_SIZE.y; y++) {

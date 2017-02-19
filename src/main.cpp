@@ -6,16 +6,6 @@
 #include "path_map.h"
 #include "ncurses_render.h"
 
-WINDOW* init_win() {
-	WINDOW *win = initscr();
-	noecho();
-	curs_set(0);
-	// halfdelay(1);
-	// nodelay(win, true);
-	keypad(win, true);
-	return win;
-}
-
 bool camera_in_range(const Vector2 &camera_pos) {
 	return pos_in_range(camera_pos) && pos_in_range(camera_pos + VIEW_SIZE);
 }
@@ -70,7 +60,7 @@ void render(const Map &map, bool visible[MAP_TILE_COUNT],
 int main() {
 	init_log("rl.log");
 
-	init_win();
+	ncurses_init_win();
 	defer(endwin());
 
 	Map map;
