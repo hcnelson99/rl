@@ -380,8 +380,3 @@ void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) co
 next_iteration: ;
 	}
 }
-
-void clear_visibility(bool visible[MAP_TILE_COUNT]) {
-	if (visible)
-		memset(visible, false, MAP_TILE_COUNT);
-}

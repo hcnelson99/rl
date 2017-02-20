@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <thread>
 #include <chrono>
+#include <string.h>
 
 #include "map.h"
 #include "util.h"
@@ -8,20 +9,6 @@
 #include "curses_render.h"
 
 Vector2 enemy_pos;
-
-bool camera_in_range(const Vector2 &camera_pos) {
-	return pos_in_range(camera_pos) && pos_in_range(camera_pos + VIEW_SIZE);
-}
-
-void camera_position(const Vector2 &player_pos, Vector2 *camera_pos) {
-	*camera_pos = player_pos - VIEW_SIZE / 2;
-
-	if (camera_pos->x < 0) { camera_pos->x = 0; }
-	if (camera_pos->y < 0) { camera_pos->y = 0; }
-	if (camera_pos->x > MAP_SIZE.x - VIEW_SIZE.x) { camera_pos->x = MAP_SIZE.x - VIEW_SIZE.x; }
-	if (camera_pos->y > MAP_SIZE.y - VIEW_SIZE.y) { camera_pos->y = MAP_SIZE.y - VIEW_SIZE.y; }
-
-}
 
 enum MoveType {MOVE_NONE, MOVE_WAIT, MOVE_STEP};
 struct Move {
@@ -43,49 +30,6 @@ bool move_character(const Map &map, Vector2 *character_pos, const Move &move) {
 	return false;
 }
 
-void render(const Map &map, bool visible[MAP_TILE_COUNT],
-		const Vector2 &player_pos, bool scrolling) {
-	erase();
-
-	Vector2 camera_pos;
-	if (scrolling) {
-		VIEW_SIZE = {80, 24};
-		camera_position(player_pos, &camera_pos);
-	} else {
-		VIEW_SIZE = MAP_SIZE;
-		camera_pos = {0, 0};
-	}
-
-	if (visible) {
-		map.visibility(player_pos, visible);
-	}
-	curses_render(map, camera_pos, visible);
-
-
-	Vector2 player_screen_location;
-	Vector2 enemy_screen_location;
-	if (scrolling) {
-		player_screen_location = player_pos - camera_pos;
-		enemy_screen_location = enemy_pos - camera_pos;
-	}  else {
-		player_screen_location = player_pos;
-		enemy_screen_location = enemy_pos;
-	}
-
-	attron(COLOR_PAIR(BLUE));
-	mvprintw(player_screen_location.y, player_screen_location.x, "@");
-	attroff(COLOR_PAIR(BLUE));
-
-	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < VIEW_SIZE.x &&
-			enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
-			(!visible || visible[pos_to_index(enemy_pos)])) {
-		attron(COLOR_PAIR(RED));
-		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
-		attroff(COLOR_PAIR(RED));
-	}
-
-	refresh();
-}
 
 const auto goal_frame_time = std::chrono::milliseconds(16);
 
@@ -104,8 +48,8 @@ int main() {
 	bool scrolling = true;
 	bool render_visible = true;
 
-	bool visible[MAP_TILE_COUNT];
-	clear_visibility(visible);
+	bool history[MAP_TILE_COUNT];
+	memset(history, false, MAP_TILE_COUNT);
 
 	cave_map(&map, false);
 
@@ -141,12 +85,10 @@ int main() {
 
 		switch (c) {
 			case 'r':
-				clear_visibility(visible);
 				cave_map(&map, false);
 				redraw = true;
 				break;
 			case 'e':
-				clear_visibility(visible);
 				cave_map(&map, true);
 				redraw = true;
 				break;
@@ -187,9 +129,8 @@ int main() {
 				break;
 			case ' ':
 				PathMap path_map;
-				map.visibility(player_pos, visible);
 				for (int i = 0; i < MAP_TILE_COUNT; i++) {
-					if (!visible[i]) {
+					if (!history[i]) {
 						path_map.set_goal(i);
 					}
 				}
@@ -241,7 +182,7 @@ int main() {
 		}
 
 		if (redraw) {
-			render(map, render_visible ? visible : nullptr, player_pos, scrolling);
+			curses_render(map, player_pos, enemy_pos, history, render_visible, scrolling);
 			redraw = false;
 		}
 
