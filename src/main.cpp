@@ -68,13 +68,17 @@ void render(const Map &map, bool visible[MAP_TILE_COUNT],
 	}
 
 	Vector2 player_screen_location = player_pos - camera_pos;
+	attron(COLOR_PAIR(BLUE));
 	mvprintw(player_screen_location.y, player_screen_location.x, "@");
+	attroff(COLOR_PAIR(BLUE));
 
 	Vector2 enemy_screen_location = enemy_pos - camera_pos;
 	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < VIEW_SIZE.x &&
 		enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
 		visible[pos_to_index(enemy_pos)]) {
+		attron(COLOR_PAIR(RED));
 		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
+		attroff(COLOR_PAIR(RED));
 	}
 
 	refresh();

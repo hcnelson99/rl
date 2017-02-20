@@ -6,6 +6,16 @@
 
 WINDOW* curses_init_win() {
 	WINDOW *win = initscr();
+	if (!has_colors()) {
+		CRITICAL("Terminal needs to support color");
+		return nullptr;
+	}
+	start_color();
+	use_default_colors();
+	for (int i = 0; i < 16; i++) {
+		init_pair(i+1, i, -1);
+	}
+
 	noecho();
 	curs_set(0);
 	nodelay(win, true);
