@@ -5,7 +5,7 @@
 #include "map.h"
 #include "util.h"
 #include "path_map.h"
-#include "ncurses_render.h"
+#include "curses_render.h"
 
 bool camera_in_range(const Vector2 &camera_pos) {
 	return pos_in_range(camera_pos) && pos_in_range(camera_pos + VIEW_SIZE);
@@ -32,8 +32,8 @@ void move_player(const Map &map, Vector2 *player_pos, const Vector2 &dir) {
 
 void render_entire_map(const Map &map) {
 	erase();
-	ncurses_render(map);
-	// ncurses_floodfill_render(map);
+	curses_render(map);
+	// curses_floodfill_render(map);
 	refresh();
 }
 
@@ -46,9 +46,9 @@ void render(const Map &map, bool visible[MAP_TILE_COUNT],
 
 	if (visible) {
 		map.visibility(player_pos, visible);
-		ncurses_render_visible(map, camera_pos, visible);
+		curses_render_visible(map, camera_pos, visible);
 	} else {
-		ncurses_render(map, camera_pos);
+		curses_render(map, camera_pos);
 	}
 
 	Vector2 player_screen_location = player_pos - camera_pos;
@@ -62,7 +62,7 @@ const auto goal_frame_time = std::chrono::milliseconds(16);
 int main() {
 	init_log("rl.log");
 
-	ncurses_init_win();
+	curses_init_win();
 	defer(endwin());
 
 	Map map;
