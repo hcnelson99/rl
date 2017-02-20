@@ -98,7 +98,7 @@ int main() {
 
 	Map map;
 
-	// bool *visible = nullptr;
+	bool render_visible = true;
 	bool visible[MAP_TILE_COUNT];
 	clear_visibility(visible);
 
@@ -169,6 +169,14 @@ int main() {
 			case '.':
 				player_move.type = MOVE_WAIT;
 				break;
+			case 'v':
+				if (render_visible) {
+					render_visible = false;
+				} else {
+					render_visible = true;
+				}
+				redraw = true;
+				break;
 			case ' ':
 				PathMap path_map;
 				map.visibility(player_pos, visible);
@@ -226,7 +234,7 @@ int main() {
 
 		if (redraw) {
 			// render_entire_map(map, player_pos);
-			render(map, visible, player_pos);
+			render(map, render_visible ? visible : nullptr, player_pos);
 			redraw = false;
 		}
 
