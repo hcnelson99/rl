@@ -11,6 +11,8 @@
 #include "path_map.h"
 #include "pcg_variants.h"
 
+Vector2 VIEW_SIZE;
+
 int Map::count_neighbors(const Vector2 &pos) const {
 	int neighbors = 0;
 	for (unsigned int i = 0; i < ARRAY_LEN(ADJACENTS); i++) {

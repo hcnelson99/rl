@@ -7,10 +7,8 @@
 #include "pcg_variants.h"
 #include "vector.h"
 
-const Vector2 VIEW_SIZE = {80, 24};
-const Vector2 HALF_SCREEN = VIEW_SIZE / 2;
+extern Vector2 VIEW_SIZE;
 
-// const Vector2 MAP_SIZE = {400, 80};
 #define MAP_X 235
 #define MAP_Y 73
 const Vector2 MAP_SIZE = {MAP_X, MAP_Y};

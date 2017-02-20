@@ -14,7 +14,7 @@ bool camera_in_range(const Vector2 &camera_pos) {
 }
 
 void camera_position(const Vector2 &player_pos, Vector2 *camera_pos) {
-	*camera_pos = player_pos - HALF_SCREEN;
+	*camera_pos = player_pos - VIEW_SIZE / 2;
 
 	if (camera_pos->x < 0) { camera_pos->x = 0; }
 	if (camera_pos->y < 0) { camera_pos->y = 0; }
@@ -43,39 +43,42 @@ bool move_character(const Map &map, Vector2 *character_pos, const Move &move) {
 	return false;
 }
 
-
-void render_entire_map(const Map &map, const Vector2 &player_pos) {
-	erase();
-	curses_render(map);
-	// curses_floodfill_render(map);
-	mvprintw(player_pos.y, player_pos.x, "@");
-	mvprintw(enemy_pos.y, enemy_pos.x, "g");
-	refresh();
-}
-
 void render(const Map &map, bool visible[MAP_TILE_COUNT],
-		const Vector2 &player_pos) {
+		const Vector2 &player_pos, bool scrolling) {
 	erase();
 
 	Vector2 camera_pos;
-	camera_position(player_pos, &camera_pos);
+	if (scrolling) {
+		VIEW_SIZE = {80, 24};
+		camera_position(player_pos, &camera_pos);
+	} else {
+		VIEW_SIZE = MAP_SIZE;
+		camera_pos = {0, 0};
+	}
 
 	if (visible) {
 		map.visibility(player_pos, visible);
-		curses_render_visible(map, camera_pos, visible);
-	} else {
-		curses_render(map, camera_pos);
+	}
+	curses_render(map, camera_pos, visible);
+
+
+	Vector2 player_screen_location;
+	Vector2 enemy_screen_location;
+	if (scrolling) {
+		player_screen_location = player_pos - camera_pos;
+		enemy_screen_location = enemy_pos - camera_pos;
+	}  else {
+		player_screen_location = player_pos;
+		enemy_screen_location = enemy_pos;
 	}
 
-	Vector2 player_screen_location = player_pos - camera_pos;
 	attron(COLOR_PAIR(BLUE));
 	mvprintw(player_screen_location.y, player_screen_location.x, "@");
 	attroff(COLOR_PAIR(BLUE));
 
-	Vector2 enemy_screen_location = enemy_pos - camera_pos;
 	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < VIEW_SIZE.x &&
-		enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
-		visible[pos_to_index(enemy_pos)]) {
+			enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
+			(!visible || visible[pos_to_index(enemy_pos)])) {
 		attron(COLOR_PAIR(RED));
 		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
 		attroff(COLOR_PAIR(RED));
@@ -98,7 +101,9 @@ int main() {
 
 	Map map;
 
+	bool scrolling = true;
 	bool render_visible = true;
+
 	bool visible[MAP_TILE_COUNT];
 	clear_visibility(visible);
 
@@ -114,7 +119,7 @@ int main() {
 		}
 	}
 
-	for (int i = MAP_TILE_COUNT; i >= 0; i--) {
+	for (int i = MAP_TILE_COUNT - 1; i >= 0; i--) {
 		if (*map.at(i) == Tile::Floor) {
 			enemy_pos = index_to_pos(i);
 			break;
@@ -135,11 +140,6 @@ int main() {
 		player_move.type = MOVE_NONE;
 
 		switch (c) {
-			case 'c':
-				clear_visibility(visible);
-				map.cellular_automata_iteration();
-				redraw = true;
-				break;
 			case 'r':
 				clear_visibility(visible);
 				cave_map(&map, false);
@@ -174,6 +174,14 @@ int main() {
 					render_visible = false;
 				} else {
 					render_visible = true;
+				}
+				redraw = true;
+				break;
+			case 'c':
+				if (scrolling) {
+					scrolling = false;
+				} else {
+					scrolling = true;
 				}
 				redraw = true;
 				break;
@@ -233,8 +241,7 @@ int main() {
 		}
 
 		if (redraw) {
-			// render_entire_map(map, player_pos);
-			render(map, render_visible ? visible : nullptr, player_pos);
+			render(map, render_visible ? visible : nullptr, player_pos, scrolling);
 			redraw = false;
 		}
 
