@@ -98,7 +98,7 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 
 	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < VIEW_SIZE.x &&
 			enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
-			(!visible || visible[pos_to_index(enemy_pos)])) {
+			(!visibility || visible[pos_to_index(enemy_pos)])) {
 		attron(COLOR_PAIR(RED));
 		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
 		attroff(COLOR_PAIR(RED));

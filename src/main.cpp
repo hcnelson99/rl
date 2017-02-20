@@ -51,7 +51,7 @@ int main() {
 	bool history[MAP_TILE_COUNT];
 	memset(history, false, MAP_TILE_COUNT);
 
-	cave_map(&map, false);
+	cave_map(&map);
 
 
 	// Player position
@@ -85,11 +85,8 @@ int main() {
 
 		switch (c) {
 			case 'r':
-				cave_map(&map, false);
-				redraw = true;
-				break;
-			case 'e':
-				cave_map(&map, true);
+				cave_map(&map);
+				memset(history, false, MAP_TILE_COUNT);
 				redraw = true;
 				break;
 			case 'w':

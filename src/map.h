@@ -105,6 +105,6 @@ bool pos_in_range(const Vector2 &pos);
 void empty_map(Map *map);
 void filled_map(Map *map);
 void bezier(Map *map);
-void cave_map(Map *map, bool alec_gen_caves_before_rooms);
+void cave_map(Map *map);
 
 void random_map(Map *map, pcg32_random_t *gen, unsigned int percent);

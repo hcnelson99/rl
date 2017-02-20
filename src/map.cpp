@@ -256,16 +256,12 @@ void connect_regions(Map *map) {
 	}
 }
 
-void cave_map(Map *map, bool alec_gen_caves_before_rooms) {
+void cave_map(Map *map) {
 	pcg32_random_t gen;
 
 	seed_pcg32(&gen, 0);
 
 	random_map(map, &gen, 40);
-
-	if (alec_gen_caves_before_rooms) {
-		map->smooth();
-	}
 
 	const int max_room_num = 20;
 	Rect rooms[max_room_num];
