@@ -1,5 +1,6 @@
 #include <assert.h>
-#include <ncurses.h>
+#include <thread>
+#include <chrono>
 
 #include "map.h"
 #include "util.h"
@@ -56,6 +57,7 @@ void render(const Map &map, bool visible[MAP_TILE_COUNT],
 	refresh();
 }
 
+const auto goal_frame_time = std::chrono::milliseconds(16);
 
 int main() {
 	init_log("rl.log");
@@ -84,6 +86,8 @@ int main() {
 	bool redraw = true;
 
 	while (true) {
+		auto start_time = std::chrono::steady_clock::now();
+
 		int c = getch();
 
 		if (c == 'q') {
@@ -153,6 +157,19 @@ int main() {
 			render(map, visible, player_pos);
 			redraw = false;
 		}
+
+
+		auto current_time = std::chrono::steady_clock::now();
+		auto frame_time = current_time - start_time;
+		auto spare_time = goal_frame_time - frame_time;
+
+		if (spare_time < std::chrono::seconds(0)) {
+			// WARNING("Missed frame time by %ldns", -std::chrono::duration_cast<std::chrono::nanoseconds>(spare_time).count());
+		} else {
+			std::this_thread::sleep_for(spare_time);
+		}
+		// auto end_time = std::chrono::steady_clock::now();
+		// LOG("framerate: %f", 1E9 / std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count());
 	}
 
 	return 0;

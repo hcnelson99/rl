@@ -9,7 +9,7 @@ WINDOW* ncurses_init_win() {
 	noecho();
 	curs_set(0);
 	// halfdelay(1);
-	// nodelay(win, true);
+	nodelay(win, true);
 	keypad(win, true);
 	return win;
 }
