@@ -41,7 +41,7 @@ int main() {
 	WINDOW *win = curses_init_win();
 	defer(endwin());
 	if (!win) {
-	CRITICAL("Could not initialize curses window");
+		CRITICAL("Could not initialize curses window");
 		return 1;
 	}
 
