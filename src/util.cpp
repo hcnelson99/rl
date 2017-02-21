@@ -1,6 +1,7 @@
 #include "util.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 
 const char *log_level_string(LogLevel log_level) {
@@ -20,6 +21,8 @@ LogLevel log_level = LogLevel::Debug;
 
 
 void init_log(const char *logpath) {
+	assert(logpath);
+
 	log_file = fopen(logpath, "a");
 	log_level = LogLevel::Debug;
 }

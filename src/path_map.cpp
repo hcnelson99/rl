@@ -49,14 +49,14 @@ bool PathMap::operator!=(const PathMap &o) const {
 	return !(*this == o);
 }
 
-void PathMap::smooth(const Map *map) {
+void PathMap::smooth(const Map &map) {
 	PathMap old_path_map;
 	do {
 		memcpy(&old_path_map, this, sizeof(PathMap));
 
 		for (int i = 0; i < MAP_TILE_COUNT; i++) {
 			Vector2 pos = index_to_pos(i);
-			if (*map->at(pos) == Tile::Floor) {
+			if (*map.at(pos) == Tile::Floor) {
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
 					Vector2 adj = pos + o;

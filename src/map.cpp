@@ -65,6 +65,8 @@ void Map::smooth() {
 }
 
 void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
+	assert(rng);
+
 	uint64_t seed;
 
 	int ret = syscall(SYS_getrandom, &seed, sizeof(seed), 0);
@@ -81,6 +83,9 @@ struct Rect {
 };
 
 void random_room(Rect *room, pcg32_random_t *gen) {
+	assert(room);
+	assert(gen);
+
 	int width = pcg32_boundedrand_r(gen, 10) + 8;
 	int height = pcg32_boundedrand_r(gen, 10) + 8;
 	room->p1.x = pcg32_boundedrand_r(gen, MAP_SIZE.x - width + 1);
@@ -95,6 +100,9 @@ bool overlaps(const Rect &r1, const Rect &r2) {
 }
 
 void random_map(Map *map, pcg32_random_t *gen, unsigned int percent) {
+	assert(map);
+	assert(gen);
+
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
 		if (pcg32_boundedrand_r(gen, 100) < percent) {
 			*map->at(i) = Tile::Wall;

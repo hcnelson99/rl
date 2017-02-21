@@ -16,7 +16,7 @@ struct PathMap {
 
 	void set_goal(const Vector2 &pos);
 	void set_goal(int i);
-	void smooth(const Map *map);
+	void smooth(const Map &map);
 
 	bool operator==(const PathMap &o) const;
 	bool operator!=(const PathMap &o) const;

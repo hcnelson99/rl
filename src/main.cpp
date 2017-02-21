@@ -19,6 +19,8 @@ struct Move {
 };
 
 bool move_character(const Map &map, Vector2 *character_pos, const Move &move) {
+	assert(character_pos);
+
 	if (move.type == MOVE_STEP) {
 		Vector2 new_character_pos = *character_pos + move.step;
 
@@ -131,7 +133,7 @@ int main() {
 						path_map.set_goal(i);
 					}
 				}
-				path_map.smooth(&map);
+				path_map.smooth(map);
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
@@ -159,7 +161,7 @@ int main() {
 		if (player_move.type != MOVE_NONE) {
 			PathMap enemy_path_map;
 			enemy_path_map.set_goal(player_pos);
-			enemy_path_map.smooth(&map);
+			enemy_path_map.smooth(map);
 
 			Move enemy_move;
 			enemy_move.type = MOVE_WAIT;
