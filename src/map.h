@@ -7,8 +7,6 @@
 #include "pcg_variants.h"
 #include "vector.h"
 
-extern Vector2 VIEW_SIZE;
-
 #define MAP_X 235
 #define MAP_Y 73
 const Vector2 MAP_SIZE = {MAP_X, MAP_Y};

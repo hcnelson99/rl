@@ -1,3 +1,2 @@
 * Factor out bresenham line drawing
 * Handle multiple enemies (and entities generically)
-* Factor camera_pos and VIEW into camera object

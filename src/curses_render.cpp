@@ -6,22 +6,42 @@
 #include "map.h"
 #include "util.h"
 
+#define BLACK 1
+#define LIGHT_BLACK 9
+#define RED 2
+#define LIGHT_RED 10
+#define GREEN 3
+#define LIGHT_GREEN 11
+#define YELLOW 4
+#define LIGHT_YELLOW 12
+#define BLUE 5
+#define LIGHT_BLUE 13
+#define MAGENTA 6
+#define LIGHT_MAGENTA 14
+#define CYAN 7
+#define LIGHT_CYAN 15
+#define WHITE 8
+#define LIGHT_WHITE 16
+
+
 // TODO: Factor out camera functions (if other graphical backends are ever written)
-bool camera_in_range(const Vector2 &camera_pos) {
-	return pos_in_range(camera_pos) && pos_in_range(camera_pos + VIEW_SIZE);
-}
+struct Camera {
+	// pos is upper left corner
+	Vector2 pos, view_size;
 
-void camera_position(const Vector2 &player_pos, Vector2 *camera_pos) {
-	assert(camera_pos);
+	void update_scroll(const Vector2 &player_pos) {
+		pos = player_pos - view_size / 2;
 
-	*camera_pos = player_pos - VIEW_SIZE / 2;
+		if (pos.x < 0) { pos.x = 0; }
+		if (pos.y < 0) { pos.y = 0; }
+		if (pos.x > MAP_SIZE.x - view_size.x) { pos.x = MAP_SIZE.x - view_size.x; }
+		if (pos.y > MAP_SIZE.y - view_size.y) { pos.y = MAP_SIZE.y - view_size.y; }
 
-	if (camera_pos->x < 0) { camera_pos->x = 0; }
-	if (camera_pos->y < 0) { camera_pos->y = 0; }
-	if (camera_pos->x > MAP_SIZE.x - VIEW_SIZE.x) { camera_pos->x = MAP_SIZE.x - VIEW_SIZE.x; }
-	if (camera_pos->y > MAP_SIZE.y - VIEW_SIZE.y) { camera_pos->y = MAP_SIZE.y - VIEW_SIZE.y; }
+		assert(pos_in_range(pos) && pos_in_range(pos + view_size - Vector2{1, 1}));
+	}
+};
 
-}
+
 
 WINDOW* curses_init_win() {
 	WINDOW *win = initscr();
@@ -50,13 +70,13 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 	bool visible[MAP_TILE_COUNT];
 	memset(visible, false, MAP_TILE_COUNT);
 
-	Vector2 camera_pos;
+	Camera camera;
 	if (scrolling) {
-		VIEW_SIZE = {80, 24};
-		camera_position(player_pos, &camera_pos);
+		camera.view_size = {80, 24};
+		camera.update_scroll(player_pos);
 	} else {
-		VIEW_SIZE = MAP_SIZE;
-		camera_pos = {0, 0};
+		camera.view_size = MAP_SIZE;
+		camera.pos = {0, 0};
 	}
 
 	map.visibility(player_pos, visible);
@@ -66,9 +86,8 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 		}
 	}
 
-	assert(pos_in_range(camera_pos + VIEW_SIZE - Vector2{1, 1}));
-	for (int y = camera_pos.y; y < camera_pos.y + VIEW_SIZE.y; y++) {
-		for (int x = camera_pos.x; x < camera_pos.x + VIEW_SIZE.x; x++) {
+	for (int y = camera.pos.y; y < camera.pos.y + camera.view_size.y; y++) {
+		for (int x = camera.pos.x; x < camera.pos.x + camera.view_size.x; x++) {
 			if (visibility) {
 				if (visible[pos_to_index({x, y})]) {
 					printw("%s", *map.at({x, y}) == Tile::Wall ? "#" : ".");
@@ -89,8 +108,8 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 	Vector2 player_screen_location;
 	Vector2 enemy_screen_location;
 	if (scrolling) {
-		player_screen_location = player_pos - camera_pos;
-		enemy_screen_location = enemy_pos - camera_pos;
+		player_screen_location = player_pos - camera.pos;
+		enemy_screen_location = enemy_pos - camera.pos;
 	}  else {
 		player_screen_location = player_pos;
 		enemy_screen_location = enemy_pos;
@@ -100,8 +119,8 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 	mvprintw(player_screen_location.y, player_screen_location.x, "@");
 	attroff(COLOR_PAIR(BLUE));
 
-	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < VIEW_SIZE.x &&
-			enemy_screen_location.y >= 0 && enemy_screen_location.y < VIEW_SIZE.y &&
+	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < camera.view_size.x &&
+			enemy_screen_location.y >= 0 && enemy_screen_location.y < camera.view_size.y &&
 			(!visibility || visible[pos_to_index(enemy_pos)])) {
 		attron(COLOR_PAIR(RED));
 		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
