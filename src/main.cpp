@@ -149,6 +149,7 @@ int main() {
 		}
 
 		if (player_move.type == MOVE_STEP) {
+			// Refactor? Should be two steps? See if valid, if so move?
 			bool successful_move = move_character(map, &player_pos, player_move);
 			if (successful_move) {
 				redraw = true;
