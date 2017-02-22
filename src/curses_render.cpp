@@ -139,7 +139,6 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 				screen_location.y >= 0 && screen_location.y < camera.view_size.y &&
 				(!render_visible || visible[pos_to_index(mob.pos)])) {
 			RenderInfo render_info = mob_render_info.at(mob.type);
-			LOG("%d", render_info.color);
 			attron(render_info.color);
 			mvprintw(screen_location.y, screen_location.x, &render_info.display);
 			attroff(render_info.color);
