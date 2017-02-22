@@ -1,26 +1,26 @@
 #include <vector>
-#include <unordered_set>
+#include <unordered_map>
 #include <string.h>
 
 #include "curses_render.h"
 #include "map.h"
 #include "util.h"
 
-#define BLACK 1
-#define LIGHT_BLACK 9
-#define RED 2
-#define LIGHT_RED 10
-#define GREEN 3
-#define LIGHT_GREEN 11
-#define YELLOW 4
-#define LIGHT_YELLOW 12
-#define BLUE 5
-#define LIGHT_BLUE 13
-#define MAGENTA 6
-#define LIGHT_MAGENTA 14
-#define CYAN 7
-#define LIGHT_CYAN 15
-#define WHITE 8
+#define BLACK COLOR_PAIR(1)
+#define LIGHT_BLACK COLOR_PAIR(9)
+#define RED COLOR_PAIR(2)
+#define LIGHT_RED COLOR_PAIR(10)
+#define GREEN COLOR_PAIR(3)
+#define LIGHT_GREEN COLOR_PAIR(11)
+#define YELLOW COLOR_PAIR(4)
+#define LIGHT_YELLOW COLOR_PAIR(12)
+#define BLUE COLOR_PAIR(5)
+#define LIGHT_BLUE COLOR_PAIR(13)
+#define MAGENTA COLOR_PAIR(6)
+#define LIGHT_MAGENTA COLOR_PAIR(14)
+#define CYAN COLOR_PAIR(7)
+#define LIGHT_CYAN COLOR_PAIR(15)
+#define WHITE COLOR_PAIR(8)
 #define LIGHT_WHITE 16
 
 
@@ -41,6 +41,16 @@ struct Camera {
 	}
 };
 
+// TODO: Factor out render information (if other graphical backends are ever written)
+struct RenderInfo {
+	char display;
+	int color;
+};
+
+const std::unordered_map<MobType, RenderInfo> mob_render_info = {
+		{MobType::Player, {'@', BLUE}},
+		{MobType::Enemy, {'g', RED}},
+	};
 
 
 WINDOW* curses_init_win() {
@@ -62,13 +72,23 @@ WINDOW* curses_init_win() {
 	return win;
 }
 
-void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &enemy_pos, bool history[MAP_TILE_COUNT], bool visibility, bool scrolling) {
-	assert(history);
+void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible) {
+	assert(player_view_history);
 
-	erase();
+	MobID player_id;
+	for (auto it : game.mobs) {
+		auto mob = it.second;
+		if (mob.type == MobType::Player) {
+			player_id = it.first;
+			break;
+		}
+	}
+
 
 	bool visible[MAP_TILE_COUNT];
 	memset(visible, false, MAP_TILE_COUNT);
+
+	Vector2 player_pos = game.mobs.at(player_id).pos;
 
 	Camera camera;
 	if (scrolling) {
@@ -79,52 +99,51 @@ void curses_render(const Map &map, const Vector2 &player_pos, const Vector2 &ene
 		camera.pos = {0, 0};
 	}
 
-	map.visibility(player_pos, visible);
+	game.map.visibility(player_pos, visible);
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
 		if (visible[i]) {
-			history[i] = visible[i];
+			player_view_history[i] = visible[i];
 		}
 	}
 
+	erase();
+
 	for (int y = camera.pos.y; y < camera.pos.y + camera.view_size.y; y++) {
 		for (int x = camera.pos.x; x < camera.pos.x + camera.view_size.x; x++) {
-			if (visibility) {
+			if (render_visible) {
 				if (visible[pos_to_index({x, y})]) {
-					printw("%s", *map.at({x, y}) == Tile::Wall ? "#" : ".");
-				} else if (history[pos_to_index({x, y})]) {
+					printw("%s", *game.map.at({x, y}) == Tile::Wall ? "#" : ".");
+				} else if (player_view_history[pos_to_index({x, y})]) {
 					attron(COLOR_PAIR(LIGHT_BLACK));
-					printw("%s", *map.at({x, y}) == Tile::Wall ? "#" : ".");
+					printw("%s", *game.map.at({x, y}) == Tile::Wall ? "#" : ".");
 					attroff(COLOR_PAIR(LIGHT_BLACK));
 				} else {
 					printw(" ");
 				}
 			} else {
-				printw("%s", *map.at({x, y}) == Tile::Wall ? "#" : " ");
+				printw("%s", *game.map.at({x, y}) == Tile::Wall ? "#" : " ");
 			}
 		}
 		printw("\n");
 	}
 
-	Vector2 player_screen_location;
-	Vector2 enemy_screen_location;
-	if (scrolling) {
-		player_screen_location = player_pos - camera.pos;
-		enemy_screen_location = enemy_pos - camera.pos;
-	}  else {
-		player_screen_location = player_pos;
-		enemy_screen_location = enemy_pos;
-	}
+	for (auto it : game.mobs) {
+		auto mob = it.second;
 
-	attron(COLOR_PAIR(BLUE));
-	mvprintw(player_screen_location.y, player_screen_location.x, "@");
-	attroff(COLOR_PAIR(BLUE));
+		Vector2 screen_location = mob.pos;
+		if (scrolling) {
+			screen_location -= camera.pos;
+		}
 
-	if (enemy_screen_location.x >= 0 && enemy_screen_location.x < camera.view_size.x &&
-			enemy_screen_location.y >= 0 && enemy_screen_location.y < camera.view_size.y &&
-			(!visibility || visible[pos_to_index(enemy_pos)])) {
-		attron(COLOR_PAIR(RED));
-		mvprintw(enemy_screen_location.y, enemy_screen_location.x, "g");
-		attroff(COLOR_PAIR(RED));
+		if (screen_location.x >= 0 && screen_location.x < camera.view_size.x &&
+				screen_location.y >= 0 && screen_location.y < camera.view_size.y &&
+				(!render_visible || visible[pos_to_index(mob.pos)])) {
+			RenderInfo render_info = mob_render_info.at(mob.type);
+			LOG("%d", render_info.color);
+			attron(render_info.color);
+			mvprintw(screen_location.y, screen_location.x, &render_info.display);
+			attroff(render_info.color);
+		}
 	}
 
 	refresh();

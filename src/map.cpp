@@ -1,7 +1,5 @@
 #include <stdint.h>
 #include <string.h>
-#include <syscall.h>
-#include <unistd.h>
 
 #include <queue>
 #include <algorithm>
@@ -9,7 +7,6 @@
 #include "map.h"
 #include "util.h"
 #include "path_map.h"
-#include "pcg_variants.h"
 
 int Map::count_neighbors(const Vector2 &pos) const {
 	int neighbors = 0;
@@ -62,18 +59,6 @@ void Map::smooth() {
 	} while (old_map != *this);
 }
 
-void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
-	assert(rng);
-
-	uint64_t seed;
-
-	int ret = syscall(SYS_getrandom, &seed, sizeof(seed), 0);
-	assert(ret == sizeof(seed));
-
-	LOG("seed: %lu", seed);
-
-	pcg32_srandom_r(rng, seed, initseq);
-}
 
 // p1 is upper left (inclusive), p2 is upper right (exclusive)
 struct Rect {

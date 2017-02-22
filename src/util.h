@@ -4,6 +4,10 @@
 #include <libgen.h>
 #include <time.h>
 #include <unordered_set>
+#include <syscall.h>
+#include <unistd.h>
+
+#include "pcg_variants.h"
 
 template <typename F>
 struct Defer {
@@ -20,6 +24,8 @@ Defer<F> make_defer(F f) {
 #define CONCAT_1(x, y) x##y
 #define CONCAT(x, y) CONCAT_1(x, y)
 #define defer(expr) auto CONCAT(_defer_, __COUNTER__) = make_defer([&]() {expr;})
+
+void seed_pcg32(pcg32_random_t *rng, uint64_t initseq);
 
 
 #define ARRAY_LEN(x) sizeof(x)/sizeof(x[0])

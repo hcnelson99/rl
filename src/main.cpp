@@ -3,14 +3,12 @@
 #include <chrono>
 #include <string.h>
 
-#include "map.h"
+#include "game.h"
 #include "util.h"
 #include "path_map.h"
 #include "curses_render.h"
 
-Vector2 enemy_pos;
-
-enum MoveType {MOVE_NONE, MOVE_WAIT, MOVE_STEP};
+enum class MoveType {None, Wait, Step};
 struct Move {
 	MoveType type;
 	union {
@@ -18,20 +16,50 @@ struct Move {
 	};
 };
 
-bool move_character(const Map &map, Vector2 *character_pos, const Move &move) {
-	assert(character_pos);
+bool move_mob(const Map &map, Vector2 *mob_pos, const Move &move) {
+	assert(mob_pos);
 
-	if (move.type == MOVE_STEP) {
-		Vector2 new_character_pos = *character_pos + move.step;
+	if (move.type == MoveType::Step) {
+		Vector2 new_mob_pos = *mob_pos + move.step;
 
-		if (*map.at(new_character_pos) == Tile::Floor) {
-			*character_pos = new_character_pos;
+		if (*map.at(new_mob_pos) == Tile::Floor) {
+			*mob_pos = new_mob_pos;
 			return true;
 		}
 	}
 	return false;
 }
 
+void enemy_gen(Game &game) {
+	pcg32_random_t mob_gen;
+	seed_pcg32(&mob_gen, 0);
+
+	int floor_count = 0;
+	for (int i = 0; i < MAP_TILE_COUNT; i++) {
+		if (*game.map.at(i) == Tile::Floor) {
+			floor_count++;
+		}
+	}
+
+	for (int i = 0; i < 50; i++) {
+		Mob enemy;
+		enemy.type = MobType::Enemy;
+
+		int r = pcg32_boundedrand_r(&mob_gen, floor_count);
+		int fi = -1;
+		for (int j = 0; j < MAP_TILE_COUNT; j++) {
+			if (*game.map.at(j) == Tile::Floor) {
+				fi++;
+			}
+			if (fi == r) {
+				enemy.pos = index_to_pos(j);
+				break;
+			}
+		}
+		game.new_mob(enemy);
+	}
+
+}
 
 const auto goal_frame_time = std::chrono::milliseconds(16);
 
@@ -45,32 +73,30 @@ int main() {
 		return 1;
 	}
 
-	Map map;
-
 	bool scrolling = true;
 	bool render_visible = true;
 
-	bool history[MAP_TILE_COUNT];
-	memset(history, false, MAP_TILE_COUNT);
+	Game game;
+	cave_map(&game.map);
 
-	cave_map(&map);
+	bool player_view_history[MAP_TILE_COUNT];
+	memset(player_view_history, false, MAP_TILE_COUNT);
 
-
-	// Player position
-	Vector2 player_pos;
-	for (int i = 0; i < MAP_TILE_COUNT; i++) {
-		if (*map.at(i) == Tile::Floor) {
-			player_pos = index_to_pos(i);
-			break;
+	MobID player_id;
+	{
+		Mob player;
+		player.type = MobType::Player;
+		for (int i = 0; i < MAP_TILE_COUNT; i++) {
+			if (*game.map.at(i) == Tile::Floor) {
+				player.pos = index_to_pos(i);
+				break;
+			}
 		}
+		player_id = game.new_mob(player);
 	}
 
-	for (int i = MAP_TILE_COUNT - 1; i >= 0; i--) {
-		if (*map.at(i) == Tile::Floor) {
-			enemy_pos = index_to_pos(i);
-			break;
-		}
-	}
+	enemy_gen(game);
+
 	bool redraw = true;
 
 	while (true) {
@@ -83,32 +109,32 @@ int main() {
 		}
 
 		Move player_move;
-		player_move.type = MOVE_NONE;
+		player_move.type = MoveType::None;
 
 		switch (c) {
 			case 'r':
-				cave_map(&map);
-				memset(history, false, MAP_TILE_COUNT);
+				cave_map(&game.map);
+				memset(player_view_history, false, MAP_TILE_COUNT);
 				redraw = true;
 				break;
 			case 'w':
-				player_move.type = MOVE_STEP;
+				player_move.type = MoveType::Step;
 				player_move.step = Vector2{0, -1};
 				break;
 			case 'a':
-				player_move.type = MOVE_STEP;
+				player_move.type = MoveType::Step;
 				player_move.step = Vector2{-1, 0};
 				break;
 			case 's':
-				player_move.type = MOVE_STEP;
+				player_move.type = MoveType::Step;
 				player_move.step = Vector2{0, 1};
 				break;
 			case 'd':
-				player_move.type = MOVE_STEP;
+				player_move.type = MoveType::Step;
 				player_move.step = Vector2{1, 0};
 				break;
 			case '.':
-				player_move.type = MOVE_WAIT;
+				player_move.type = MoveType::Wait;
 				break;
 			case 'v':
 				if (render_visible) {
@@ -129,17 +155,17 @@ int main() {
 			case ' ':
 				PathMap path_map;
 				for (int i = 0; i < MAP_TILE_COUNT; i++) {
-					if (!history[i]) {
+					if (!player_view_history[i]) {
 						path_map.set_goal(i);
 					}
 				}
-				path_map.smooth(map);
+				path_map.smooth(game.map);
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
-					Vector2 pos = player_pos + o;
+					Vector2 pos = game.mobs[player_id].pos + o;
 					if (*path_map.at(pos) < min) {
-						player_move.type = MOVE_STEP;
+						player_move.type = MoveType::Step;
 						player_move.step = o;
 						min = *path_map.at(pos);
 					}
@@ -148,41 +174,47 @@ int main() {
 				break;
 		}
 
-		if (player_move.type == MOVE_STEP) {
+		if (player_move.type == MoveType::Step) {
 			// Refactor? Should be two steps? See if valid, if so move?
-			bool successful_move = move_character(map, &player_pos, player_move);
+			bool successful_move = move_mob(game.map, &game.mobs[player_id].pos, player_move);
 			if (successful_move) {
 				redraw = true;
 			} else {
-				// If move was invalid (into wall), set player_move to NONE so enemies do not move
-				player_move.type = MOVE_NONE;
+				// If move was invalid (into wall), set player_move to None so enemies do not move
+				player_move.type = MoveType::None;
 			}
 		}
 
-		if (player_move.type != MOVE_NONE) {
+		if (player_move.type != MoveType::None) {
 			PathMap enemy_path_map;
-			enemy_path_map.set_goal(player_pos);
-			enemy_path_map.smooth(map);
+			enemy_path_map.set_goal(game.mobs[player_id].pos);
+			enemy_path_map.smooth(game.map);
 
-			Move enemy_move;
-			enemy_move.type = MOVE_WAIT;
+			for (auto it = begin(game.mobs); it != end(game.mobs); it++) {
+				if (it->second.type == MobType::Enemy) {
+					auto enemy = &it->second;
 
-			int min = *enemy_path_map.at(enemy_pos);
-			for (const Vector2 &o : ORTHOGONALS) {
-				Vector2 pos = enemy_pos + o;
-				if (*enemy_path_map.at(pos) < min) {
-					enemy_move.type = MOVE_STEP;
-					enemy_move.step = o;
-					min = *enemy_path_map.at(pos);
+					Move enemy_move;
+					enemy_move.type = MoveType::Wait;
+
+					int min = *enemy_path_map.at(enemy->pos);
+					for (const Vector2 &o : ORTHOGONALS) {
+						Vector2 pos = enemy->pos + o;
+						if (*enemy_path_map.at(pos) < min) {
+							enemy_move.type = MoveType::Step;
+							enemy_move.step = o;
+							min = *enemy_path_map.at(pos);
+						}
+					}
+
+					move_mob(game.map, &enemy->pos, enemy_move);
+					redraw = true;
 				}
 			}
-
-			move_character(map, &enemy_pos, enemy_move);
-			redraw = true;
 		}
 
 		if (redraw) {
-			curses_render(map, player_pos, enemy_pos, history, render_visible, scrolling);
+			curses_render(game, player_view_history, scrolling, render_visible);
 			redraw = false;
 		}
 

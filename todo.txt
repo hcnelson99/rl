@@ -1,2 +1,1 @@
 * Factor out bresenham line drawing
-* Handle multiple enemies (and entities generically)
