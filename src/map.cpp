@@ -250,7 +250,9 @@ void connect_regions(Map *map) {
 void cave_map(Map *map) {
 	pcg32_random_t gen;
 
-	seed_pcg32(&gen, 0);
+	auto seed = gen_seed();
+	LOG("map gen seed: %ul", seed);
+	seed_pcg32(&gen, seed);
 
 	random_map(map, &gen, 40);
 

@@ -25,7 +25,8 @@ Defer<F> make_defer(F f) {
 #define CONCAT(x, y) CONCAT_1(x, y)
 #define defer(expr) auto CONCAT(_defer_, __COUNTER__) = make_defer([&]() {expr;})
 
-void seed_pcg32(pcg32_random_t *rng, uint64_t initseq);
+uint64_t gen_seed();
+void seed_pcg32(pcg32_random_t *rng, uint64_t seed);
 
 
 #define ARRAY_LEN(x) sizeof(x)/sizeof(x[0])

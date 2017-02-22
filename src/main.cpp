@@ -32,7 +32,7 @@ bool move_mob(const Map &map, Vector2 *mob_pos, const Move &move) {
 
 void enemy_gen(Game &game) {
 	pcg32_random_t mob_gen;
-	seed_pcg32(&mob_gen, 0);
+	seed_pcg32(&mob_gen, gen_seed());
 
 	int floor_count = 0;
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {

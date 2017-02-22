@@ -3,17 +3,15 @@
 #include <stdio.h>
 #include <assert.h>
 
-void seed_pcg32(pcg32_random_t *rng, uint64_t initseq) {
-	assert(rng);
+void seed_pcg32(pcg32_random_t *rng, uint64_t seed) {
+	pcg32_srandom_r(rng, seed, 0);
+}
 
+uint64_t gen_seed() {
 	uint64_t seed;
-
 	int ret = syscall(SYS_getrandom, &seed, sizeof(seed), 0);
 	assert(ret == sizeof(seed));
-
-	LOG("seed: %lu", seed);
-
-	pcg32_srandom_r(rng, seed, initseq);
+	return seed;
 }
 
 const char *log_level_string(LogLevel log_level) {
