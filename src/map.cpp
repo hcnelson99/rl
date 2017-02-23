@@ -251,7 +251,7 @@ void cave_map(Map *map) {
 	pcg32_random_t gen;
 
 	auto seed = gen_seed();
-	LOG("map gen seed: %ul", seed);
+	LOG("map gen seed: %lu", seed);
 	seed_pcg32(&gen, seed);
 
 	random_map(map, &gen, 40);

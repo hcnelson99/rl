@@ -52,6 +52,7 @@ void enemy_gen(Game &game) {
 				fi++;
 			}
 			if (fi == r) {
+				assert(*game.map.at(j) == Tile::Floor);
 				enemy.pos = index_to_pos(j);
 				break;
 			}
