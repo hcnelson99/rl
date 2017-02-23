@@ -359,7 +359,6 @@ void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) co
 		double y = player_pos.y;
 		for (int i = 0; i < steps; i++) {
 			if (*at({(int)x, (int)y}) == Tile::Wall) {
-				// visible[t] = false;
 				goto next_iteration;
 			}
 			x += xi;

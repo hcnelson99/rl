@@ -85,8 +85,6 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 	}
 
 
-	bool visible[MAP_TILE_COUNT];
-	memset(visible, false, MAP_TILE_COUNT);
 
 	Vector2 player_pos = game.mobs.at(player_id).pos;
 
@@ -99,7 +97,10 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 		camera.pos = {0, 0};
 	}
 
+	bool visible[MAP_TILE_COUNT];
+	memset(visible, false, MAP_TILE_COUNT);
 	game.map.visibility(player_pos, visible);
+
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
 		if (visible[i]) {
 			player_view_history[i] = visible[i];
@@ -114,9 +115,9 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 				if (visible[pos_to_index({x, y})]) {
 					printw("%s", *game.map.at({x, y}) == Tile::Wall ? "#" : ".");
 				} else if (player_view_history[pos_to_index({x, y})]) {
-					attron(COLOR_PAIR(LIGHT_BLACK));
+					attron(LIGHT_BLACK);
 					printw("%s", *game.map.at({x, y}) == Tile::Wall ? "#" : ".");
-					attroff(COLOR_PAIR(LIGHT_BLACK));
+					attroff(LIGHT_BLACK);
 				} else {
 					printw(" ");
 				}
