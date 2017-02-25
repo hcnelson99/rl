@@ -42,7 +42,7 @@ void enemy_gen(Game &game) {
 	}
 
 	for (int i = 0; i < 50; i++) {
-		Mob enemy;
+		CMob enemy;
 		enemy.type = MobType::Enemy;
 
 		int r = pcg32_boundedrand_r(&mob_gen, floor_count);
@@ -57,7 +57,7 @@ void enemy_gen(Game &game) {
 				break;
 			}
 		}
-		game.new_mob(enemy);
+		game.add_cmob(game.new_entity(), enemy);
 	}
 
 }
@@ -83,17 +83,18 @@ int main() {
 	bool player_view_history[MAP_TILE_COUNT];
 	memset(player_view_history, false, MAP_TILE_COUNT);
 
-	MobID player_id;
 	{
-		Mob player;
-		player.type = MobType::Player;
+		CMob mob_player;
+		mob_player.type = MobType::Player;
 		for (int i = 0; i < MAP_TILE_COUNT; i++) {
 			if (*game.map.at(i) == Tile::Floor) {
-				player.pos = index_to_pos(i);
+				mob_player.pos = index_to_pos(i);
 				break;
 			}
 		}
-		player_id = game.new_mob(player);
+		EntityID player = game.new_entity();
+		game.add_tag(player, EntityTag::Player);
+		game.add_cmob(player, mob_player);
 	}
 
 	enemy_gen(game);
@@ -164,7 +165,7 @@ int main() {
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
-					Vector2 pos = game.mobs[player_id].pos + o;
+					Vector2 pos = game.get_cmob(game.get_tagged(EntityTag::Player))->pos + o;
 					if (*path_map.at(pos) < min) {
 						player_move.type = MoveType::Step;
 						player_move.step = o;
@@ -175,9 +176,11 @@ int main() {
 				break;
 		}
 
+		CMob *mob_player = game.get_cmob(game.get_tagged(EntityTag::Player));
+
 		if (player_move.type == MoveType::Step) {
 			// Refactor? Should be two steps? See if valid, if so move?
-			bool successful_move = move_mob(game.map, &game.mobs[player_id].pos, player_move);
+			bool successful_move = move_mob(game.map, &mob_player->pos, player_move);
 			if (successful_move) {
 				redraw = true;
 			} else {
@@ -188,7 +191,7 @@ int main() {
 
 		if (player_move.type != MoveType::None) {
 			PathMap enemy_path_map;
-			enemy_path_map.set_goal(game.mobs[player_id].pos);
+			enemy_path_map.set_goal(mob_player->pos);
 			enemy_path_map.smooth(game.map);
 
 			for (auto it = begin(game.mobs); it != end(game.mobs); it++) {

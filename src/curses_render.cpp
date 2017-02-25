@@ -75,18 +75,9 @@ WINDOW* curses_init_win() {
 void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible) {
 	assert(player_view_history);
 
-	MobID player_id;
-	for (auto it : game.mobs) {
-		auto mob = it.second;
-		if (mob.type == MobType::Player) {
-			player_id = it.first;
-			break;
-		}
-	}
+	EntityID player = game.get_tagged(EntityTag::Player);
 
-
-
-	Vector2 player_pos = game.mobs.at(player_id).pos;
+	Vector2 player_pos = game.get_cmob(player)->pos;
 
 	Camera camera;
 	if (scrolling) {
