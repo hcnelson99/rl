@@ -313,7 +313,7 @@ void bezier(Map *map) {
 		int dx = p1.x - p0.x;
 		int dy = p1.y - p0.y;
 
-		int steps = max(abs(dx), abs(dy));
+		int steps = std::max(abs(dx), abs(dy));
 
 		double xi = dx / (double) steps;
 		double yi = dy / (double) steps;
@@ -350,7 +350,7 @@ void Map::visibility(const Vector2 &player_pos, bool visible[MAP_TILE_COUNT]) co
 		int dx = p1.x - player_pos.x;
 		int dy = p1.y - player_pos.y;
 
-		int steps = max(abs(dx), abs(dy));
+		int steps = std::max(abs(dx), abs(dy));
 
 		double xi = dx / (double) steps;
 		double yi = dy / (double) steps;

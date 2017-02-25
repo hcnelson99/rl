@@ -31,9 +31,6 @@ void seed_pcg32(pcg32_random_t *rng, uint64_t seed);
 
 #define ARRAY_LEN(x) sizeof(x)/sizeof(x[0])
 
-#define min(x, y) (x < y ? x : y)
-#define max(x, y) (x > y ? x : y)
-
 template <class T>
 bool contains(const std::unordered_set<T> &s, const T &e) {
 	return s.find(e) != s.end();

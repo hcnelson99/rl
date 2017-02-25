@@ -2,8 +2,7 @@
 
 #include <string.h>
 #include <assert.h>
-
-#include "util.h"
+#include <algorithm>
 
 PathMap::PathMap() {
 	for (int i = 0; i < MAP_TILE_COUNT; i++) {
@@ -61,7 +60,7 @@ void PathMap::smooth(const Map &map) {
 				for (const Vector2 &o : ORTHOGONALS) {
 					Vector2 adj = pos + o;
 					if (pos_in_range(adj)) {
-						min = min(*at(adj), min);
+						min = std::min(*at(adj), min);
 					}
 				}
 				if (*at(pos) > min + 1) {
