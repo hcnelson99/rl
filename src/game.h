@@ -15,10 +15,39 @@ struct CMob {
 	Vector2 pos;
 };
 
+
+#define add_component(type, name) \
+	std::unordered_map<EntityID, type > CONCAT(name, s) ; \
+	const type * CONCAT(get_, name) (EntityID e) const { \
+		auto lookup = CONCAT(name, s) .find(e); \
+		if (lookup == CONCAT(name, s) .end()) { \
+			CRITICAL("Could not find %s for EntityID %u",#name, e); \
+			assert(false); \
+		} \
+		return &lookup->second; \
+	} \
+ \
+	type * CONCAT(get_, name) (EntityID e) { \
+		auto lookup = CONCAT(name, s) .find(e); \
+		if (lookup == CONCAT(name, s) .end()) { \
+			CRITICAL("Could not find %s for EntityID %u",#name, e); \
+			assert(false); \
+		} \
+		return &lookup->second; \
+	} \
+ \
+	void CONCAT(add_, name) (EntityID e, const type & name) { \
+		if (! CONCAT(name, s) .insert({e, name}).second) { \
+			CRITICAL("Entity %u already has %s", e, #name); \
+			assert(false); \
+		} \
+	} \
+
+
+
 struct Game {
 	EntityID next_entity = 0;
 	std::unordered_map<EntityTag, EntityID> tags;
-	std::unordered_map<EntityID, CMob> mobs;
 
 	Map map;
 
@@ -42,29 +71,6 @@ struct Game {
 		return lookup->second;
 	}
 
-	const CMob *get_cmob(EntityID e) const {
-		auto lookup = mobs.find(e);
-		if (lookup == mobs.end()) {
-			CRITICAL("Could not find CMob for EntityID %u", e);
-			assert(false);
-		}
-		return &lookup->second;
-	}
-
-	CMob *get_cmob(EntityID e) {
-		auto lookup = mobs.find(e);
-		if (lookup == mobs.end()) {
-			CRITICAL("Could not find CMob for EntityID %u", e);
-			assert(false);
-		}
-		return &lookup->second;
-	}
-
-	void add_cmob(EntityID e, const CMob &cmob) {
-		if (!mobs.insert({e, cmob}).second) {
-			CRITICAL("Entity %u already has CMob", e);
-			assert(false);
-		}
-	}
+	add_component(CMob, mob)
 };
 

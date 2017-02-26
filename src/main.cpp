@@ -57,7 +57,7 @@ void enemy_gen(Game &game) {
 				break;
 			}
 		}
-		game.add_cmob(game.new_entity(), enemy);
+		game.add_mob(game.new_entity(), enemy);
 	}
 
 }
@@ -94,7 +94,7 @@ int main() {
 		}
 		EntityID player = game.new_entity();
 		game.add_tag(player, EntityTag::Player);
-		game.add_cmob(player, mob_player);
+		game.add_mob(player, mob_player);
 	}
 
 	enemy_gen(game);
@@ -165,7 +165,7 @@ int main() {
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
-					Vector2 pos = game.get_cmob(game.get_tagged(EntityTag::Player))->pos + o;
+					Vector2 pos = game.get_mob(game.get_tagged(EntityTag::Player))->pos + o;
 					if (*path_map.at(pos) < min) {
 						player_move.type = MoveType::Step;
 						player_move.step = o;
@@ -176,7 +176,7 @@ int main() {
 				break;
 		}
 
-		CMob *mob_player = game.get_cmob(game.get_tagged(EntityTag::Player));
+		CMob *mob_player = game.get_mob(game.get_tagged(EntityTag::Player));
 
 		if (player_move.type == MoveType::Step) {
 			// Refactor? Should be two steps? See if valid, if so move?

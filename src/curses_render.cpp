@@ -77,7 +77,7 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 
 	EntityID player = game.get_tagged(EntityTag::Player);
 
-	Vector2 player_pos = game.get_cmob(player)->pos;
+	Vector2 player_pos = game.get_mob(player)->pos;
 
 	Camera camera;
 	if (scrolling) {
