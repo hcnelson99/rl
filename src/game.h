@@ -7,7 +7,7 @@
 
 typedef uint32_t EntityID;
 
-enum class EntityTag {Player};
+enum class EntityTag : int {Player};
 
 enum class MobType {Player, Enemy};
 struct CMob {
@@ -57,7 +57,7 @@ struct Game {
 
 	void add_tag(EntityID e, EntityTag tag) {
 		if (!tags.insert({tag, e}).second) {
-			CRITICAL("Entity %u already has tag %d", e, tag);
+			CRITICAL("Entity %u already has tag %d", e, static_cast<int>(tag));
 			assert(false);
 		}
 	}
