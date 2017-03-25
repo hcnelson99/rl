@@ -16,38 +16,70 @@ struct CMob {
 };
 
 
-#define add_component(type, name) \
-	std::unordered_map<EntityID, type > CONCAT(name, s) ; \
-	const type * CONCAT(get_, name) (EntityID e) const { \
-		auto lookup = CONCAT(name, s) .find(e); \
-		if (lookup == CONCAT(name, s) .end()) { \
-			CRITICAL("Could not find %s for EntityID %u",#name, e); \
-			assert(false); \
-		} \
-		return &lookup->second; \
-	} \
- \
-	type * CONCAT(get_, name) (EntityID e) { \
-		auto lookup = CONCAT(name, s) .find(e); \
-		if (lookup == CONCAT(name, s) .end()) { \
-			CRITICAL("Could not find %s for EntityID %u",#name, e); \
-			assert(false); \
-		} \
-		return &lookup->second; \
-	} \
- \
-	void CONCAT(add_, name) (EntityID e, const type & name) { \
-		if (! CONCAT(name, s) .insert({e, name}).second) { \
-			CRITICAL("Entity %u already has %s", e, #name); \
-			assert(false); \
-		} \
-	} \
+template <typename T>
+class ComponentStore {
+	virtual T *get(EntityID e) = 0;
+	virtual const T *get(EntityID e) const = 0;
+	virtual void add(EntityID e, const T &name) = 0;
+};
 
+template <typename T>
+class MapStore : ComponentStore<T> {
+
+	std::unordered_map<EntityID, T> map;
+
+public:
+
+	MapStore() : map() {}
+
+	typename std::unordered_map<EntityID, T>::const_iterator begin() const {
+		return map.begin();
+	}
+
+	typename std::unordered_map<EntityID, T>::const_iterator end() const {
+		return map.end();
+	}
+
+	typename std::unordered_map<EntityID, T>::iterator begin() {
+		return map.begin();
+	}
+
+	typename std::unordered_map<EntityID, T>::iterator end() {
+		return map.end();
+	}
+
+	T *get(EntityID e) {
+		auto lookup = map.find(e);
+		if (lookup == map.end()) {
+			CRITICAL("Could not find component for EntityID %u", e);
+			assert(false);
+		}
+		return &lookup->second;
+	}
+
+	const T *get(EntityID e) const {
+		auto lookup = map.find(e);
+		if (lookup == map.end()) {
+			CRITICAL("Could not find component for EntityID %u", e);
+			assert(false);
+		}
+		return &lookup->second;
+	}
+
+	void add(EntityID e, const T &name) {
+		if (! map.insert({e, name}).second) {
+			CRITICAL("Entity %u already has this component", e);
+			assert(false);
+		}
+	}
+};
 
 
 struct Game {
 	EntityID next_entity = 0;
 	std::unordered_map<EntityTag, EntityID> tags;
+
+	MapStore<CMob> mobs;
 
 	Map map;
 
@@ -70,7 +102,5 @@ struct Game {
 		}
 		return lookup->second;
 	}
-
-	add_component(CMob, mob)
 };
 

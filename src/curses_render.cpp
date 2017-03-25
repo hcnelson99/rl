@@ -77,7 +77,7 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 
 	EntityID player = game.get_tagged(EntityTag::Player);
 
-	Vector2 player_pos = game.get_mob(player)->pos;
+	Vector2 player_pos = game.mobs.get(player)->pos;
 
 	Camera camera;
 	if (scrolling) {
@@ -119,7 +119,7 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 		printw("\n");
 	}
 
-	for (auto it : game.mobs) {
+	for (const auto &it : game.mobs) {
 		auto mob = it.second;
 
 		Vector2 screen_location = mob.pos;
