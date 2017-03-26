@@ -7,4 +7,5 @@ add_executable(rl
 
 find_package(Curses REQUIRED)
 
-target_link_libraries(rl ${CURSES_LIBRARIES} pcg-random)
+include_directories(${EntityX_INCLUDE_DIRS})
+target_link_libraries(rl ${CURSES_LIBRARIES} entityx pcg-random)

@@ -8,6 +8,8 @@
 #include "path_map.h"
 #include "curses_render.h"
 
+using namespace entityx;
+
 enum class MoveType {None, Wait, Step};
 struct Move {
 	MoveType type;
@@ -58,9 +60,9 @@ void enemy_gen(Game &game) {
 				break;
 			}
 		}
-		EntityID e = game.new_entity();
-		game.mob.add(e, enemy);
-		game.pos.add(e, pos);
+		Entity e = game.ecs.create();
+		e.assign<CMob>(enemy);
+		e.assign<CPos>(pos);
 	}
 
 }
@@ -96,10 +98,10 @@ int main() {
 				break;
 			}
 		}
-		EntityID player = game.new_entity();
+		Entity player = game.ecs.create();
 		game.add_tag(player, EntityTag::Player);
-		game.mob.add(player, mob_player);
-		game.pos.add(player, player_pos);
+		player.assign<CMob>(mob_player);
+		player.assign<CPos>(player_pos);
 	}
 
 	enemy_gen(game);
@@ -170,7 +172,7 @@ int main() {
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
-					Vector2 pos = *game.pos.get(game.get_tagged(EntityTag::Player)) + o;
+					Vector2 pos = game.get_tagged(EntityTag::Player).component<CPos>()->pos + o;
 					if (*path_map.at(pos) < min) {
 						player_move.type = MoveType::Step;
 						player_move.step = o;
@@ -181,7 +183,7 @@ int main() {
 				break;
 		}
 
-		Vector2 *player_pos = game.pos.get(game.get_tagged(EntityTag::Player));
+		Vector2 *player_pos = &game.get_tagged(EntityTag::Player).component<CPos>()->pos;
 
 		if (player_move.type == MoveType::Step) {
 			// Refactor? Should be two steps? See if valid, if so move?
@@ -199,15 +201,15 @@ int main() {
 			enemy_path_map.set_goal(*player_pos);
 			enemy_path_map.smooth(game.map);
 
-			component_map(game.mob, game.pos, [&](EntityID e, CMob &mob, Vector2 &mob_pos) {
+			game.ecs.each<CMob, CPos>([&] (Entity e, CMob &mob, CPos &mob_pos) {
 				if (mob.type == MobType::Enemy) {
 
 					Move enemy_move;
 					enemy_move.type = MoveType::Wait;
 
-					int min = *enemy_path_map.at(mob_pos);
+					int min = *enemy_path_map.at(mob_pos.pos);
 					for (const Vector2 &o : ORTHOGONALS) {
-						Vector2 pos = mob_pos + o;
+						Vector2 pos = mob_pos.pos + o;
 						if (*enemy_path_map.at(pos) < min) {
 							enemy_move.type = MoveType::Step;
 							enemy_move.step = o;
@@ -215,7 +217,7 @@ int main() {
 						}
 					}
 
-					move_mob(game.map, &mob_pos, enemy_move);
+					move_mob(game.map, &mob_pos.pos, enemy_move);
 					redraw = true;
 				}
 

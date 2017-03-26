@@ -5,4 +5,4 @@
 #include "game.h"
 
 WINDOW* curses_init_win();
-void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible);
+void curses_render(Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible);

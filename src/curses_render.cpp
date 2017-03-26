@@ -23,6 +23,7 @@
 #define WHITE COLOR_PAIR(8)
 #define LIGHT_WHITE 16
 
+using namespace entityx;
 
 // TODO: Factor out camera functions (if other graphical backends are ever written)
 struct Camera {
@@ -72,12 +73,12 @@ WINDOW* curses_init_win() {
 	return win;
 }
 
-void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible) {
+void curses_render(Game &game, bool player_view_history[MAP_TILE_COUNT], bool scrolling, bool render_visible) {
 	assert(player_view_history);
 
-	EntityID player = game.get_tagged(EntityTag::Player);
+	Entity player = game.get_tagged(EntityTag::Player);
 
-	Vector2 player_pos = *game.pos.get(player);
+	Vector2 player_pos = player.component<CPos>()->pos;
 
 	Camera camera;
 	if (scrolling) {
@@ -119,15 +120,16 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 		printw("\n");
 	}
 
-	component_map(game.mob, game.pos, [&](EntityID e, const CMob &mob, const Vector2 &mob_pos) {
-		Vector2 screen_location = mob_pos;
+	game.ecs.each<CMob, CPos>([&](const Entity e, CMob &mob, CPos &mob_pos) {
+		LOG("test\n");
+		Vector2 screen_location = mob_pos.pos;
 		if (scrolling) {
 			screen_location -= camera.pos;
 		}
 
 		if (screen_location.x >= 0 && screen_location.x < camera.view_size.x &&
 				screen_location.y >= 0 && screen_location.y < camera.view_size.y &&
-				(!render_visible || visible[pos_to_index(mob_pos)])) {
+				(!render_visible || visible[pos_to_index(mob_pos.pos)])) {
 			RenderInfo render_info = mob_render_info.at(mob.type);
 			attron(render_info.color);
 			mvprintw(screen_location.y, screen_location.x, &render_info.display);

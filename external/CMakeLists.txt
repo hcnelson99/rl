@@ -19,3 +19,5 @@ add_library(pcg-random
 	${PCG_DIR}/src/pcg-advance-16.c)
 
 target_include_directories(pcg-random PUBLIC ${PCG_DIR}/include)
+
+add_subdirectory(entityX)
