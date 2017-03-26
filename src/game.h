@@ -12,7 +12,6 @@ enum class EntityTag : int {Player};
 enum class MobType {Player, Enemy};
 struct CMob {
 	MobType type;
-	Vector2 pos;
 };
 
 
@@ -51,8 +50,7 @@ public:
 	T *get(EntityID e) {
 		auto lookup = map.find(e);
 		if (lookup == map.end()) {
-			CRITICAL("Could not find component for EntityID %u", e);
-			assert(false);
+			return nullptr;
 		}
 		return &lookup->second;
 	}
@@ -60,8 +58,7 @@ public:
 	const T *get(EntityID e) const {
 		auto lookup = map.find(e);
 		if (lookup == map.end()) {
-			CRITICAL("Could not find component for EntityID %u", e);
-			assert(false);
+			return nullptr;
 		}
 		return &lookup->second;
 	}
@@ -75,11 +72,32 @@ public:
 };
 
 
+template <typename A, typename B, typename F>
+void component_map(MapStore<A> &m1, MapStore<B> &m2, F/* std::function<void(EntityID, A&, B&)>& */ f) {
+	for (auto it = m1.begin(); it != m1.end(); it++) {
+		B *b = m2.get(it->first);
+		if (b) {
+			f(it->first, it->second, *b);
+		}
+	}
+}
+
+template <typename A, typename B, typename F>
+void component_map(const MapStore<A> &m1, const MapStore<B> &m2, F/* std::function<void(EntityID, A&, B&)>& */ f) {
+	for (auto it = m1.begin(); it != m1.end(); it++) {
+		const B *b = m2.get(it->first);
+		if (b) {
+			f(it->first, it->second, *b);
+		}
+	}
+}
+
 struct Game {
 	EntityID next_entity = 0;
 	std::unordered_map<EntityTag, EntityID> tags;
 
-	MapStore<CMob> mobs;
+	MapStore<CMob> mob;
+	MapStore<Vector2> pos;
 
 	Map map;
 

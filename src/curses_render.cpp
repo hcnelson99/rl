@@ -77,7 +77,7 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 
 	EntityID player = game.get_tagged(EntityTag::Player);
 
-	Vector2 player_pos = game.mobs.get(player)->pos;
+	Vector2 player_pos = *game.pos.get(player);
 
 	Camera camera;
 	if (scrolling) {
@@ -119,23 +119,21 @@ void curses_render(const Game &game, bool player_view_history[MAP_TILE_COUNT], b
 		printw("\n");
 	}
 
-	for (const auto &it : game.mobs) {
-		auto mob = it.second;
-
-		Vector2 screen_location = mob.pos;
+	component_map(game.mob, game.pos, [&](EntityID e, const CMob &mob, const Vector2 &mob_pos) {
+		Vector2 screen_location = mob_pos;
 		if (scrolling) {
 			screen_location -= camera.pos;
 		}
 
 		if (screen_location.x >= 0 && screen_location.x < camera.view_size.x &&
 				screen_location.y >= 0 && screen_location.y < camera.view_size.y &&
-				(!render_visible || visible[pos_to_index(mob.pos)])) {
+				(!render_visible || visible[pos_to_index(mob_pos)])) {
 			RenderInfo render_info = mob_render_info.at(mob.type);
 			attron(render_info.color);
 			mvprintw(screen_location.y, screen_location.x, &render_info.display);
 			attroff(render_info.color);
 		}
-	}
+	});
 
 	refresh();
 }

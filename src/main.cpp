@@ -44,6 +44,7 @@ void enemy_gen(Game &game) {
 	for (int i = 0; i < 50; i++) {
 		CMob enemy;
 		enemy.type = MobType::Enemy;
+		Vector2 pos;
 
 		int r = pcg32_boundedrand_r(&mob_gen, floor_count);
 		int fi = -1;
@@ -53,11 +54,13 @@ void enemy_gen(Game &game) {
 			}
 			if (fi == r) {
 				assert(*game.map.at(j) == Tile::Floor);
-				enemy.pos = index_to_pos(j);
+				pos = index_to_pos(j);
 				break;
 			}
 		}
-		game.mobs.add(game.new_entity(), enemy);
+		EntityID e = game.new_entity();
+		game.mob.add(e, enemy);
+		game.pos.add(e, pos);
 	}
 
 }
@@ -85,16 +88,18 @@ int main() {
 
 	{
 		CMob mob_player;
+		Vector2 player_pos;
 		mob_player.type = MobType::Player;
 		for (int i = 0; i < MAP_TILE_COUNT; i++) {
 			if (*game.map.at(i) == Tile::Floor) {
-				mob_player.pos = index_to_pos(i);
+				player_pos = index_to_pos(i);
 				break;
 			}
 		}
 		EntityID player = game.new_entity();
 		game.add_tag(player, EntityTag::Player);
-		game.mobs.add(player, mob_player);
+		game.mob.add(player, mob_player);
+		game.pos.add(player, player_pos);
 	}
 
 	enemy_gen(game);
@@ -165,7 +170,7 @@ int main() {
 
 				int min = PATH_MAP_MAX;
 				for (const Vector2 &o : ORTHOGONALS) {
-					Vector2 pos = game.mobs.get(game.get_tagged(EntityTag::Player))->pos + o;
+					Vector2 pos = *game.pos.get(game.get_tagged(EntityTag::Player)) + o;
 					if (*path_map.at(pos) < min) {
 						player_move.type = MoveType::Step;
 						player_move.step = o;
@@ -176,11 +181,11 @@ int main() {
 				break;
 		}
 
-		CMob *mob_player = game.mobs.get(game.get_tagged(EntityTag::Player));
+		Vector2 *player_pos = game.pos.get(game.get_tagged(EntityTag::Player));
 
 		if (player_move.type == MoveType::Step) {
 			// Refactor? Should be two steps? See if valid, if so move?
-			bool successful_move = move_mob(game.map, &mob_player->pos, player_move);
+			bool successful_move = move_mob(game.map, player_pos, player_move);
 			if (successful_move) {
 				redraw = true;
 			} else {
@@ -191,19 +196,18 @@ int main() {
 
 		if (player_move.type != MoveType::None) {
 			PathMap enemy_path_map;
-			enemy_path_map.set_goal(mob_player->pos);
+			enemy_path_map.set_goal(*player_pos);
 			enemy_path_map.smooth(game.map);
 
-			for (auto it = std::begin(game.mobs); it != std::end(game.mobs); it++) {
-				if (it->second.type == MobType::Enemy) {
-					auto enemy = &it->second;
+			component_map(game.mob, game.pos, [&](EntityID e, CMob &mob, Vector2 &mob_pos) {
+				if (mob.type == MobType::Enemy) {
 
 					Move enemy_move;
 					enemy_move.type = MoveType::Wait;
 
-					int min = *enemy_path_map.at(enemy->pos);
+					int min = *enemy_path_map.at(mob_pos);
 					for (const Vector2 &o : ORTHOGONALS) {
-						Vector2 pos = enemy->pos + o;
+						Vector2 pos = mob_pos + o;
 						if (*enemy_path_map.at(pos) < min) {
 							enemy_move.type = MoveType::Step;
 							enemy_move.step = o;
@@ -211,10 +215,11 @@ int main() {
 						}
 					}
 
-					move_mob(game.map, &enemy->pos, enemy_move);
+					move_mob(game.map, &mob_pos, enemy_move);
 					redraw = true;
 				}
-			}
+
+			});
 		}
 
 		if (redraw) {
