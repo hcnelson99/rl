@@ -19,12 +19,6 @@ struct CPos {
 	Vector2 pos;
 };
 
-struct CPlayerInput {
-
-};
-
-
-
 struct Game {
 	Game() : ecs(events) {}
 	std::unordered_map<EntityTag, entityx::Entity> tags;
